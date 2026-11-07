@@ -1,0 +1,195 @@
+; JTAG controller (TAP master) for the MVP chip -- task B1-FW-jtag.
+;
+; WHAT THE CHIP PLAYS, AND WHY
+; ---------------------------
+; The chip is the *controller*: it generates TCK, drives TMS and TDI and samples TDO.
+; That is the side `verif/vip/jtag.py` splits into two devices, and the split is the
+; reason for the choice:
+;
+;   * `JtagMaster` is a *bit pump*.  It is handed a queue of TCK cycles, each with a TMS
+;     and a TDI level, and it does nothing else: it shifts the pairs out and samples TDO
+;     on the rising edge ("Samples TDO on the rising edge of TCK, logs every scan with
+;     its bits and its ticks", module docstring).
+;   * `JtagTarget` is the *TAP*: the 16-state machine, the instruction register and the
+;     data registers.
+;
+; A real JTAG link has exactly this division of labour: the probe is a bit pump and the
+; driver (OpenOCD, SVF, a debugger) decides which TMS/TDI pairs make a scan.  So the
+; PIO takes the `JtagMaster` role -- which is the part a state machine can express in 32
+; words -- and `fw/jtag/driver.py` takes the driver role, emitting the same TMS/TDI pairs
+; `JtagMaster.scan_ir()`/`scan_dr()` emit.  On the bench (fw/jtag/test_jtag.py) the far
+; end is the VIP's own `JtagTarget`, so the chip's wire output is decoded and checked by
+; `JtagChecker`, 15 rules, none of them softened.
+;
+; The chip is deliberately *not* a TAP: a TAP needs a 16-state machine, an instruction
+; register and a capture pattern, all reachable only by conditional branches, and the
+; MVP has no IRQ to hand a scan's result to the host.  See fw/jtag/README.md for the
+; word budget that rules it out.
+;
+; WHERE THE PINS ARE
+; -----------------
+; JTAG is push-pull, so no pin needs PINDIRS after the initial three instructions below
+; (protocol pin indices, docs/mvp-isa.md `### The 18 protocol pins`):
+;
+;   side-set, 1 bit, SIDESET_BASE = TCK_PIN, SIDE_PINDIR = 0
+;       side 0 -> TCK low, side 1 -> TCK high.  No `opt`, so *every* instruction in the
+;       program drives TCK; that is what lets the two halves of a bit period live in one
+;       instruction's side-set value with no extra instruction for the edge.
+;   OUT window, 2 pins, OUT_BASE = TMS_PIN, OUT_COUNT = 2
+;       `out pins, 2` puts one (TMS, TDI) pair on the two pins per TCK cycle: OSR bit 0
+;       is TMS, bit 1 is TDI, and OUT_SHIFTDIR = 1 walks them out from the bottom.
+;   IN window, IN_BASE = TDO_PIN
+;       `in pins, 1` samples TDO.  IN_SHIFTDIR = 1 -- a *right* shift is what puts the
+;       first bit sampled in bit 0 of the ISR (a left shift leaves it in bit 31 instead,
+;       and the two are not interchangeable) -- so TDO, which arrives LSB first (a JTAG
+;       scan is "Least significant bit (LSB) comes first", bit-order-svf-tutorial.txt),
+;       comes out of an RX word in the same order, with no bit reversal anywhere.
+;   SET window, 3 pins, SET_BASE = TCK_PIN, SET_COUNT = 3
+;       the three startup instructions drive the three directions and TCK's level.
+;
+; The three driven pins have to be contiguous for the OUT and SET windows, and TDO must
+; not be inside either, which is why TDO sits just above the pair.  fw/jtag/driver.py
+; carries the same four numbers and refuses a map that does not satisfy this.
+;
+; THE PROGRAM IS THREE LOOPS AND A PARK
+; -------------------------------------
+; One scan is `entry` framing clocks that shift a (TMS, TDI) pair but sample nothing,
+; then `shift` clocks that do both, then two `exit` clocks that leave Shift and land in
+; Run-Test/Idle.  The host chooses the two lengths and starts a scan with three forced
+; instructions, so no scan length is baked into IMEM:
+;
+;     set y, e - 1     framing clocks before the shift phase
+;     set x, n - 1     clocks in the shift phase
+;     jmp frame        the address the label `scan` shares with it
+;
+; The "- 1" is the whole arithmetic of this program, and two things follow from it.
+;
+; Both loops test their counter at the *bottom*, and `jmp x--` "tests X before it
+; decrements" (docs/mvp-isa.md `### Field values`), so a loop runs one more time than the
+; value it holds.  Therefore:
+;
+;   * The shift phase counts X and the framing phase counts Y, because X = 31 is the only
+;     way to count 32 clocks out of a 5-bit `set` field (Y = 32 does not exist) and a
+;     32-bit DR scan is the longest IEEE 1149.1 has.  It also has to be *one* Shift-DR
+;     phase: `JtagChecker` ends a DR scan every time the TAP leaves Shift-DR and checks
+;     each of them against the register's full length, so the SVF trick of pausing in the
+;     middle of a long scan comes out as two short scans.
+;   * A loop cannot be told "zero times", because X = 0 means one clock.  So every scan
+;     runs at least one clock in each phase, and `fw/jtag/driver.py` pads with idle clocks
+;     (TMS = 0 in Run-Test/Idle, at the level in front of them) until it can honour that.
+;     A framing-only scan -- a reset, idle clocks -- therefore clocks once through the
+;     shift phase with nothing in it and pushes the RX word for that clock; the host reads
+;     that word and throws it away.  Its TMS comes from the pair stream like every other
+;     clock's, so the host is still the one that decides what it does to the TAP.
+;
+; `exit_go`'s `set x, 1` is the same arithmetic for the fixed two-clock exit, reusing X
+; once the shift phase is done.  fw/jtag/driver.py's `loop_count` is the only place that
+; knows any of this.
+;
+; ONE TCK CYCLE IS NINE CORE CYCLES
+; ----------------------------------
+; docs/mvp-isa.md `## Timing` fixes T_OUT = 1 (a pin write in cycle n is on the pad in
+; cycle n+1) and T_IN = 3 (an engine in cycle n sees the pad from cycle n-3), and
+; verif/vip/core.py resolves every drive at the end of a tick, so the far end puts its
+; next TDO bit on the wire two ticks after the falling edge it reacted to.  Counting from
+; the SM cycle that writes the falling edge:
+;
+;   c0            `out pins, 2` side 0 [LOW_HOLD]   TCK low, new TMS/TDI, on the pad at c0+1
+;   c0+1 .. c0+LOW_HOLD+1                          TCK low: LOW_HOLD+1 ticks of low time
+;   c0+LOW_HOLD+2  `nop` side 1 [HIGH_HOLD]         TCK high on the pad from c0+LOW_HOLD+3
+;   c0+LOW_HOLD+2+HIGH_HOLD+1  `in pins, 1`        samples the pad of c0+LOW_HOLD+3, which
+;                                                    is the first tick TCK reads high: the
+;                                                    rising edge, exactly where the VIP's own
+;                                                    master samples (jtag.py `## The tick model`)
+;   then          `jmp x--, shift`                 the next fall, so TCK stays high
+;
+; LOW_HOLD = 2 is the floor and not 1.  TDO appears two ticks after the falling edge, and
+; `JtagChecker`'s TDO.setup rule ("TDO must stay valid for the whole TCK low phase once it
+; has changed", ijet profile: tdo_valid 15.6 ns = 1 tick at 20 ns) wants it at least one
+; tick before the rising edge, and TDO.change-on-high wants it to move while TCK is still
+; low.  Three ticks of low time satisfies both with a tick to spare; two would put the
+; change on the very tick the edge is measured against.
+;
+; LOW_HOLD + HIGH_HOLD + 4 = 9 SM cycles per TCK cycle -- the four instructions of the
+; loop and its two delays.  T_OUT does not add to the period, it shifts both edges by the
+; same tick; what it does is make the low time LOW_HOLD + 1 ticks on the wire, which is
+; the three of them that matter.  Nine core cycles at CLKDIV 1.0 is 5.56 MHz at the 50 MHz
+; the bench ticks at, and that is the number fw/jtag/measure.py re-measures and the
+; notes quote.  Nothing in the loop is timing-critical except the two delays, so
+; LOW_HOLD can be raised (3 gives 10 core cycles, 5.0 MHz, two ticks of TDO margin instead
+; of one) without touching anything else.
+;
+; WHY TCK IDLES HIGH
+; ------------------
+; `JtagChecker` judges TMS and TDI against the falling edge: TDI.setup and TMS.setup want
+; a change "within the profile's Tsod of the falling TCK edge", measured from the last
+; falling edge, and the check happens at the next rising edge.  So on this bus a data
+; change is only legal in the tick of a TCK falling edge -- which is what the bit loop
+; does, and also what `park` has to leave behind: parked, TCK is high, so the first
+; `out pins, 2` of the next scan is a falling edge that carries the scan's first pair.
+; (A real adapter idles TCK low.  It cannot here: the chip starts with every pin an input,
+; and the bus pulls TMS and TDI high, so turning the directions on is itself a data
+; change with no falling edge anywhere near it.  `init_pin` below writes the levels before
+; it writes the directions, which makes turning the directions on invisible on the wire,
+; and then drives TCK high once.  Idle-high TCK is what makes the whole thing come out
+; clean.)
+
+.program jtag
+.side_set 1
+
+.define PUBLIC TCK_PIN 0
+.define PUBLIC TMS_PIN 1
+.define PUBLIC TDI_PIN 2
+.define PUBLIC TDO_PIN 3
+
+; TCK low time and high time in SM cycles of delay.  LOW_HOLD is the one that matters:
+; see "ONE TCK CYCLE IS NINE SM CYCLES" above.  FRAME_HIGH is one longer, because the two
+; loops that sample no TDO have no `in pins, 1` to spend that SM cycle on: every TCK cycle
+; on the wire is then the same length whichever loop is running it.
+.define LOW_HOLD 2
+.define HIGH_HOLD 3
+.define FRAME_HIGH (HIGH_HOLD + 1)
+
+.wrap_target park
+.wrap last
+
+; Three instructions the engine runs once, when the host enables it, and then never again
+; (`park` is where every scan returns, and a scan only leaves through a forced `jmp scan`).
+; All three driven pins are inputs at reset (docs/mvp-isa.md `## Pins`), and an input TCK
+; is not a clock, so this is where the chip becomes a JTAG master.
+init_pin:
+    set pins, 6 side 0     ; level registers: TMS and TDI high, TCK low.  Every pin is an
+                          ; input until the next instruction, so none of this is on the
+                          ; wire yet -- it is written first because turning a direction on
+                          ; shows whatever level the register already holds, and the level
+                          ; that makes that transition invisible is "what the pull-up says"
+    set pindirs, 7 side 0  ; all three driven pins are outputs now, and the wire does not
+                          ; move: TCK was already low and TMS/TDI already high, which is
+                          ; what the bus was reading while they were inputs
+    nop side 1             ; TCK high: the one rising edge of the startup, with no data
+                          ; change beside it
+PUBLIC park:
+    jmp park side 1           ; idle: TCK high, TMS and TDI high.  See "WHY TCK IDLES HIGH"
+PUBLIC scan:
+frame:                          ; `scan` and `frame` are the same word: the host forces this
+    out pins, 2 side 0 [LOW_HOLD]   ; address and a scan is three forced instructions
+    nop side 1 [FRAME_HIGH]         ; TCK low, next (TMS, TDI) pair; then TCK high.  No TDO
+                                    ; to sample, so the `in` cycle is spent on the delay
+                                    ; instead: every TCK cycle is then the same nine SM
+                                    ; cycles whichever loop is running it
+    jmp y--, frame side 1          ; Y framing clocks, minus one: see above
+shift:
+    out pins, 2 side 0 [LOW_HOLD]   ; TCK low, next (TMS, TDI) pair
+    nop side 1 [HIGH_HOLD]          ; TCK high
+    in pins, 1 side 1                ; sample TDO on the rising edge
+    jmp x--, shift side 1            ; X shift clocks, minus one
+    push side 1                      ; one RX word per scan: the n bits of the shift phase,
+                                    ; bit 0 first
+exit_go:
+    set x, 1 side 1             ; Exit1 -> Update -> Run-Test/Idle is two clocks; X is
+exit:                           ; free again now that the shift phase is done, so the exit
+    out pins, 2 side 0 [LOW_HOLD]  ; loop counts X too
+    nop side 1 [FRAME_HIGH]      ; as `frame`: same length, no sample
+    jmp x--, exit side 1        ; and the third falls off the end of IMEM
+last:
+    jmp park side 1             ; WRAP_TOP is this word, so the wrap lands in `park`

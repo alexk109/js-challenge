@@ -1,0 +1,110 @@
+{
+ "//": "the MVP with each engine's 32-word IMEM in an IHP SRAM macro instead of flops. Copy of phys/cfg/mvp-slow.json (same sources, tiles, 20 ns and the same four slow-corner knobs, so the two rows in metrics/flow.csv differ only in the IMEM) plus -DIMEM_SRAM, one RM_IHPSG13_2P_64x22_c2_bm_bist per engine, and the T-002 PDN recipe re-derived for this macro.",
+ "//2": "Why a TWO-port macro: the flop IMEM is read and written in the same cycle (src/pio_engine.sv, `ir <= imem[pc_n]` next to `if (imem_we) imem[imem_addr] <= ...`), so one 1RW macro cannot hold it -- there is no cycle to give the host write. src/pio_imem_sram.sv has the argument; the fuzz caught the two-macro version of it in four cycles (research/imem-sram/1p-pair-failure/).",
+ "//3": "Why RM_IHPSG13_2P_64x22_c2_bm_bist: it is the only two-port macro in the PDK that is smaller than the flop IMEM it replaces (39,383.87 um2 against 42,627 um2 mapped, metrics/synth.csv imem-ff-32x16) and it is 64 words deep, so the upper 32 words come free. The others are 52,621 um2 (2P_64x32), 57,521 (2P_256x16), 88,482 (2P_512x16) and the 8-bit ones need two for one instruction word. 16 of its 22 data bits are used; the other six are tied off (docs/mvp-isa.md `### Engine state`: the instruction word is 16 bits).",
+ "kind": "tt",
+ "top": "tt_um_protocol_emulator",
+ "tiles": "6x4",
+ "sources": [
+  "tt_um_protocol_emulator.v",
+  "pio_chip.sv",
+  "pio_clkdiv.sv",
+  "pio_engine.sv",
+  "pio_fifo.sv",
+  "host_spi.sv",
+  "pio_imem_sram.sv"
+ ],
+ "extra_src": [
+  "RM_IHPSG13_2P_64x22_c2_bm_bist.v",
+  "pdn_cfg.tcl"
+ ],
+ "clock_period": 20,
+ "tag": "pwr-sram",
+ "librelane": {
+  "//": "USE_SLANG plus the four slow-corner knobs are phys/cfg/mvp-slow.json's, unchanged: that run closed at +3.77 ns typ / 38.8 MHz slow, and the question here is what the macro does to that.",
+  "USE_SLANG": true,
+  "PL_RESIZER_SETUP_SLACK_MARGIN": 2.0,
+  "RUN_POST_GRT_DESIGN_REPAIR": true,
+  "RUN_POST_GRT_RESIZER_TIMING": true,
+  "GRT_RESIZER_SETUP_SLACK_MARGIN": 0.5,
+  "//VERILOG_DEFINES": "IMEM_SRAM selects the SRAM IMEM in src/pio_imem_sram.sv. The same define is what verif/fuzz/Makefile, fw/Makefile and test/Makefile pass with SRAM_IMEM=1, so the flow and the tests build the same RTL. Without it the flop IMEM is elaborated, which is the default everywhere else.",
+  "VERILOG_DEFINES": [
+   "IMEM_SRAM"
+  ],
+  "//MACROS": "the LibreLane way of bringing in a hard macro (not EXTRA_LEFS/EXTRA_GDS_FILES). Key = the macro name; the files come from the PDK this repo hardens against, so nothing is vendored. pdk_dir:: resolves against $PDK_ROOT. Same lib keying as phys/cfg/sram-probe.json: the keys name the process corner, because LibreLane loads every wildcard that matches.",
+  "MACROS": {
+   "RM_IHPSG13_2P_64x22_c2_bm_bist": {
+    "//instances": "Flattened instance paths, one macro per engine. Yosys names them this way after `synth -flatten`: the macro sits in pio_chip's generate loop, so unlike the probe testers its path is not a plain top-level name. location is the lower-left corner in um, absolute in DIE_AREA. FLOORPLAN: the two macros are SIDE BY SIDE at y = 40, x = 7.5 and x = 707.9 = 7.5 + 4 x 175.10 (FP_PDN_VPITCH), so the second one sits on the same column lattice as the first (an offline stripe check with macro x 7.5 and 707.9 and voffset 13.82 passes). x = 7.5, not the old 12, so that with the 5 um row halo the rows end before the core edge (7.5 - 5 < 2.88) and no sliver of row is left left of macro 0 (see //FP_MACRO_HORIZONTAL_HALO). The 174 um gap between the macros carries a stripe pair of its own. The earlier stack (x = 12, y = 40 and 150, 35 um apart) made a 526 x 185 um wall in the core's lower left, left macro 0's 264 pins facing macro 1's back across a 35 um channel, and global routing finished with 1206 overflow (6/5 max H/V) and detailed routing never closed (54..100 violations, all Metal4 short/spacing); side by side the same netlist has 0 GRT overflow. orientation FS keeps the power columns vertical and puts the 264 Metal2 signal pins on the top edge of each macro, facing the open core.",
+    "instances": {
+     "u_chip.g_eng[0].u_eng.g_imem_sram.u_imem.u_imem": {
+      "location": [
+       7.5,
+       40
+      ],
+      "orientation": "FS"
+     },
+     "u_chip.g_eng[1].u_eng.g_imem_sram.u_imem.u_imem": {
+      "location": [
+       707.9,
+       40
+      ],
+      "orientation": "FS"
+     }
+    },
+    "gds": [
+     "pdk_dir::libs.ref/sg13cmos5l_sram/gds/RM_IHPSG13_2P_64x22_c2_bm_bist.gds"
+    ],
+    "lef": [
+     "pdk_dir::libs.ref/sg13cmos5l_sram/lef/RM_IHPSG13_2P_64x22_c2_bm_bist.lef"
+    ],
+    "lib": {
+     "*_typ_*": [
+      "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_2P_64x22_c2_bm_bist_typ_1p20V_25C.lib"
+     ],
+     "*_fast_*": [
+      "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_2P_64x22_c2_bm_bist_fast_1p32V_m55C.lib"
+     ],
+     "*_slow_*": [
+      "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_2P_64x22_c2_bm_bist_slow_1p08V_125C.lib"
+     ]
+    },
+    "//nl": "Port-only blackbox, copied into the shadow project by extra_src. NOT the PDK behavioural model, which would be synthesised; the model is what the simulation builds compile (verif/fuzz/Makefile and friends, SRAM_IMEM=1).",
+    "nl": [
+     "dir::RM_IHPSG13_2P_64x22_c2_bm_bist.v"
+    ],
+    "spice": [
+     "pdk_dir::libs.ref/sg13cmos5l_sram/cdl/RM_IHPSG13_2P_64x22_c2_bm_bist.cdl"
+    ]
+   }
+  },
+  "//FP_MACRO_HORIZONTAL_HALO": "Rows are cut FP_MACRO_*_HALO (default 10 um) away from a macro. The 175.10 um stripe lattice puts a POWER stripe (centre 8.47 um, left edge 7.42 um) right of each macro's right edge, so with the default 10 um that stripe lands inside the halo, outside every row segment beside the macro, and pdngen answers with a LOCAL Metal4 VPWR stripe (x = 624.96 and 1267.20, y 22.46..128.74) to feed the cut rows' Metal1 rails. The TT precheck's pin check then fails ('Port VDPWR is too far from bottom/top edge', first full flow of this floorplan, 2026-10-30). 5 um keeps the rows clear of the macro's Metal1-Metal4 obstruction and inside the stripes' reach (stripe left edge 7.42 um from the macro). The other side of the same trade is the left edge: at x = 12 a 5 um halo leaves a 4.3..7 um row sliver left of macro 0 that gets its own local stripe (x = 4.32, seen in the second run), so the whole lattice is shifted 4.5 um left (macro x 7.5, FP_PDN_VOFFSET 13.82 = 18.32 - 4.5).",
+  "FP_MACRO_HORIZONTAL_HALO": 5,
+  "//PDN_MACRO_CONNECTIONS": "Hooks each macro's power pins onto the block nets without USE_POWER_PINS in the RTL: <instance> <block vdd> <block gnd> <macro vdd pin> <macro gnd pin>. Both supplies go to VPWR, as the reference project and T-002 do.",
+  "PDN_MACRO_CONNECTIONS": [
+   "u_chip.g_eng.{1,2}0.{1,2}.u_eng.g_imem_sram.u_imem.u_imem VPWR VGND VDD! VSS!",
+   "u_chip.g_eng.{1,2}0.{1,2}.u_eng.g_imem_sram.u_imem.u_imem VPWR VGND VDDARRAY! VSS!",
+   "u_chip.g_eng.{1,2}1.{1,2}.u_eng.g_imem_sram.u_imem.u_imem VPWR VGND VDD! VSS!",
+   "u_chip.g_eng.{1,2}1.{1,2}.u_eng.g_imem_sram.u_imem.u_imem VPWR VGND VDDARRAY! VSS!"
+  ],
+  "//PDN_CFG": "src/pdn_cfg.tcl unchanged (Loom's script, credited): its default macro grid is replaced by a wrapper that lets the Metal4 stripes run through the macro's own power columns, verifies every stripe that crosses a macro, and fails the PDN step at once if check_power_grid still finds an open. dir:: resolves against the config's directory, i.e. proj/src/pdn_cfg.tcl.",
+  "PDN_CFG": "dir::pdn_cfg.tcl",
+  "//FP_PDN_V*": "Re-derived for this macro by searching its own column lattice and confirming the answer with an offline stripe check. VPITCH 175.10 = 10 x the macro's same-net column pitch (17.68 um); VSPACING 6.74 puts the GROUND stripe of a pair 8.84 um from the POWER one, the macro's POWER-to-GROUND column distance; VOFFSET 18.32 from the core xMin 2.88 puts the first POWER stripe centre at 21.20 = macro x 12 + 9.20, inside the macro's first POWER column with 0.31 um to spare. VWIDTH stays at TT's 2.1 um because these stripes are also the block's power pins. THIS IS THE COST: a two-port macro needs FP_PDN_VPITCH >= 175.10 um, i.e. 8 stripe pairs over the whole core where the single-port macro had 19 at 67.44 um.",
+  "FP_PDN_VPITCH": 175.1,
+  "FP_PDN_VWIDTH": 2.1,
+  "FP_PDN_VSPACING": 6.74,
+  "FP_PDN_VOFFSET": 13.82,
+  "//PDN_MULTILAYER": "No TopMetal1 in a user block: it belongs to tt_top, and the TT precheck forbids it in the block GDS.",
+  "FP_PDN_MULTILAYER": 0,
+  "//MAGIC_EXT_ABSTRACT_CELLS": "Blackbox the macro during SPICE extraction for LVS: the IHP SRAM macros are not LVS clean (the reference repo does the same).",
+  "MAGIC_EXT_ABSTRACT_CELLS": [
+   "RM_IHPSG13_.*"
+  ],
+  "//RUN_MAGIC_DRC": "The macro internals trigger massive DRC in Magic, whose cmos5l tech lacks the SRAM exceptions the KLayout sign-off deck applies; every error is inside the macro's bounding box. Magic DRC is not part of the cmos5l precheck, which uses KLayout (docs/2026-09-22-setup-and-architecture-review.md sec. 1), so it is off here as in every other config in this repo.",
+  "RUN_MAGIC_DRC": false,
+  "ERROR_ON_MAGIC_DRC": false,
+  "//ERROR_ON_ILLEGAL_OVERLAPS": "Off for the known, checked case: the POWER stripes cross the macro's VDD!/VDDARRAY! split, where the LEF puts a Metal4 OBS across each power column. Magic extracts the macro from its LEF and reports each crossing as 'Illegal overlap between obsm4 and metal4'; the macro GDS has no Metal4 in that band, LVS passes, and the cmos5l DRC sees only the real metal (T-002, phys/macro_geom.py --gds-check). The count is still reported as magic__illegal_overlap__count.",
+  "ERROR_ON_ILLEGAL_OVERLAPS": false,
+  "//MAGIC_MACRO_STD_CELL_SOURCE": "Read the full macro GDS instead of a blackbox.",
+  "MAGIC_MACRO_STD_CELL_SOURCE": "PDK"
+ }
+}

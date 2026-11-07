@@ -1,0 +1,22 @@
+{
+  "//": "Can LibreLane/OpenSTA time a clock this design generates on die? kind=block, not kind=tt, so VERILOG_FILES point straight at phys/probes/rtl/ and nothing is copied -- the probe RTL is not product RTL and does not belong in src/. N=31 keeps the probe inside a normal flow runtime; the area probe prices the real 127-stage ring (metrics/synth.csv row adpll-dco-127).",
+  "//2": "Read out of runs/adpll-probe/: (1) whether the run completed; (2) every 'ADPLL-SDC:' line in the signoff STA log -- which ring-clock object resolved, and whether create_clock and create_generated_clock were accepted; (3) whether the 8 dco_clk flops have setup AND hold slack reported, or appear as unconstrained endpoints; (4) how OpenSTA reports the ring's combinational loop. Do NOT read flow.csv's WNS column for (3): that is the design's worst path. src/adpll.sdc is the experiment and its header says what it is trying.",
+  "kind": "block",
+  "top": "adpll_flow_probe",
+  "sources": [
+    "phys/probes/rtl/probe_adpll_flow.sv",
+    "phys/probes/rtl/probe_adpll_dco.v"
+  ],
+  "extra_src": [],
+  "clock_period": 20,
+  "core_util": 20,
+  "tag": "adpll-probe",
+  "librelane": {
+    "PNR_SDC_FILE": "dir::../../../src/adpll.sdc",
+    "SIGNOFF_SDC_FILE": "dir::../../../src/adpll.sdc",
+    "//DCO_PERIOD": "5.0 ns = 200 MHz = 4x the 50 MHz reference, at the slow-corner floor from research/ideation/round2/research/adpll/adpll-physics.py section 3. src/adpll.sdc reads it from the environment so the same file can be run at the typical-corner period and the difference read off.",
+    "DCO_PERIOD": 5.0,
+    "//MAX_FANOUT": "The DCO net fans out to 10 flop clock pins and CTS roots only `clk`, so without this the ring output would be the design's worst fanout and the resizer would fight it. The lane probe uses 2 for the same reason (phys/cfg/lane-probe.json).",
+    "MAX_FANOUT_CONSTRAINT": 16
+  }
+}

@@ -1,0 +1,63 @@
+;
+; UART TX, 8N1, for the MVP chip.
+;
+; One instruction per bit, so a bit lasts (1 + BIT_DELAY) SM cycles.  CLKDIV then sets
+; the baud: one bit = (1 + BIT_DELAY) * CLKDIV core cycles.  See fw/uart_tx/driver.py,
+; which builds every register this program needs and derives the divisor from these words.
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`):
+;
+;   SHIFTCTRL  OUT_SHIFTDIR = 1 (its reset value: shift right, so the least significant
+;              data bit leaves first, which is the order a UART frame is in), AUTOPULL = 1
+;              and PULL_THRESH = 8: the eight `out pins, 1` of a byte empty the OSR and the
+;              eighth one refills it from the TX FIFO in the same SM cycle.
+;   PINCTRL    SIDESET_COUNT = 2 -- one side-set data bit *plus* the `opt` enable bit --
+;              and EXECCTRL.SIDE_EN = 1, so that the `side 2` below means "drive
+;              SIDESET_BASE low".  SIDESET_BASE = OUT_BASE = SET_BASE = the TX pin and
+;              OUT_COUNT = SET_COUNT = 1, so all three channels touch that one pin and
+;              nothing else.  Two ways to get this wrong, both of which the chip allows:
+;                * SIDESET_COUNT = 1 with SIDE_EN = 1 makes the one side-set bit the
+;                  enable and leaves no data bit, so the start bit never reaches the wire;
+;                * the reset PINCTRL (SIDESET_COUNT = 2, SIDE_EN = 0) makes *every*
+;                  instruction side-set level 0 into SIDESET_BASE, and the side-set channel
+;                  wins over OUT/SET on the same pin (docs/mvp-isa.md `### Pin writes`),
+;                  which would hold the TX line low.
+;   EXECCTRL   WRAP_BOTTOM = 0, WRAP_TOP = the last instruction below.
+;   CLKDIV     the 16.8 divider; see docs/mvp-isa.md `### Clock divider`.
+;
+; The host pushes every byte right-justified, in bits 7:0, and needs nothing else: the
+; program frames it (start bit, 8 data bits, stop bit).  A TX pin has to be one of the
+; bidirectional uio pins, 0..7, because that is where PINDIRS can drive a level
+; (docs/mvp-isa.md `### The 18 protocol pins`).
+;
+.program uart_tx
+.side_set 1 opt
+
+.define BIT_DELAY 7                ; a bit is 1 + 7 = 8 SM cycles
+
+PUBLIC start:
+        pull block               ; OSR <- the next byte from the TX FIFO.  Autopull has
+                                   ; already refilled the OSR, so in steady state this is
+                                   ; a no-op barrier and never stalls; after reset, or if
+                                   ; the host stops feeding the FIFO, it stalls until the
+                                   ; next byte arrives (docs/mvp-isa.md `### Instruction
+                                   ; semantics`, PULL).
+        set pindirs, 1 side 2 [BIT_DELAY]
+                                   ; TX pin becomes a push-pull output, and the side-set
+                                   ; field drives it low: the start bit.  No single
+                                   ; instruction writes a level and a direction through one
+                                   ; window, so the start bit rides on the side-set channel.
+                                   ; Doing both in this one instruction is what puts the
+                                   ; falling edge exactly one bit before the first data
+                                   ; bit, on the first byte as well as every later one.
+        out pins, 1        [BIT_DELAY]   ; data bit 0 (least significant bit first)
+        out pins, 1        [BIT_DELAY]   ; data bit 1
+        out pins, 1        [BIT_DELAY]   ; data bit 2
+        out pins, 1        [BIT_DELAY]   ; data bit 3
+        out pins, 1        [BIT_DELAY]   ; data bit 4
+        out pins, 1        [BIT_DELAY]   ; data bit 5
+        out pins, 1        [BIT_DELAY]   ; data bit 6
+        out pins, 1        [BIT_DELAY]   ; data bit 7
+        set pins, 1        [BIT_DELAY]   ; stop bit.  No `side` operand, so the side-set
+                                          ; field is 0 and nothing fights the SET write.
+        jmp start                     ; the line stays high (idle) until the next byte.

@@ -1,0 +1,119 @@
+;
+; DMX512-A controller (transmitter) for the MVP chip.
+;
+; One frame is BREAK, MAB, START Code, data slots, and enough mark before the next break to
+; meet the tables' minimum break-to-break time.  The chip plays the *controller*: every rule
+; in tables 6 and 7 that the wire has to obey is a transmitter's rule, and a receiver would
+; need to sample an asynchronous line through a 3-cycle input pipeline with no IRQ to tell
+; the host when a slot has landed.  The judge is verif/vip/dmx512.py (DmxChecker), which
+; measures the wire rather than trusting anything here; fw/dmx512/driver.py builds every
+; register this program needs and derives all of its timing from the words below.
+;
+; The frame, in the standard's own words (research/ref/protocols/dmx512/, clauses 8 and 9):
+;
+;     BREAK (space, >= 92 us)  |  MAB (mark, >= 12 us)  |  slot 0 = START Code
+;     |  slot 1..N, each a start bit, 8 data bits LSB first and 2 mark stop bits
+;     |  mark until 1204 us have passed since the last BREAK's falling edge
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`):
+;
+;   PINCTRL    SIDESET_COUNT = 0.  Three things depend on it.  (1) There is no side-set at
+;              all in this program, so the whole 5-bit delay/side-set field is delay, which is
+;              what lets one instruction be as long as 32 SM cycles.  (2) SIDESET_COUNT resets
+;              to 2 with SIDE_EN = 0, where *every* instruction side-sets 2 pins with data from
+;              the top of that field; left alone it would fight the SET writes on this pin and
+;              hold the line low (docs/mvp-isa.md `### Delay/side-set field`).  (3) SET_COUNT
+;              resets to 5, so `set pins, 1` would drive this pin *and its four neighbours*.
+;              OUT_BASE = SET_BASE = the DMX pin and OUT_COUNT = SET_COUNT = 1.
+;   SHIFTCTRL  OUT_SHIFTDIR = 1 (its reset value: the OSR shifts right, so bit 0 of the FIFO
+;              word is the first bit on the wire, which is the order a DMX slot is in -- LSB
+;              first, table 5).  AUTOPULL = 1 with PULL_THRESH = 8: the eight `out pins, 1` of
+;              a slot empty the OSR and the eighth refills it from the TX FIFO in the same SM
+;              cycle, so one FIFO word is one slot and the host pushes the values right-
+;              justified in bits 7:0.  A slot whose refill finds the FIFO empty stalls one SM
+;              cycle, which is one whole bit time of jitter -- the host must keep the FIFO fed
+;              (fw/dmx512/driver.py `feed`).
+;   EXECCTRL   SIDE_EN = 0, WRAP_BOTTOM = 0, WRAP_TOP = the last word below.
+;   CLKDIV     the 16.8 divider, integer.  One instruction is (1 + delay) SM cycles and one
+;              SM cycle is CLKDIV INT core cycles, so a bit lasts (1 + BIT_DELAY) * INT core
+;              cycles *exactly*: every bit edge lands on the same grid, which is what the
+;              tables' bit-rate tolerance asks for.  250 kbit/s at 50 MHz is 200 core cycles,
+;              so BIT_DELAY = 24 with INT = 8 (docs/mvp-isa.md `### Clock divider`).
+;
+; Everything marked .define is substituted by fw/dmx512/driver.py `assemble_for` before the
+; file is handed to asm/pioasm.py, and every one of the five is *derived* from the timing
+; tables and the words, never typed in by hand: BIT_DELAY from the requested bit rate,
+; BREAK_ITERS and the pad from the minimums, SLOTS from the frame the host asked for.
+;
+.program dmx512
+
+.define BIT_DELAY   24          ; a bit is 1 + 24 = 25 SM cycles; 25 * CLKDIV INT = 200 ticks
+.define BREAK_ITERS 18          ; 18 * 33 SM cycles * INT = 4752 ticks of space (>= 4600)
+.define SLOTS       25          ; START Code + 24 data slots; 25 * 300 SM = 7500 SM cycles
+.define PAD_OUTER    0          ; mark-before-break pad; the driver fills these in
+.define PAD_INNER    0          ; so that a short frame still meets the 1204 us minimum
+
+; ---- the program.  28 of the 32 words; the labels are what fw/dmx512/driver.py reads ----
+start:              ; word 0.  SM_ADDR shows the host where the engine is.
+        pull block           ; One word into the OSR before the first slot goes out.  This is
+                               ; the RP2040 idiom and it is not optional here: `osr_cnt` resets
+                               ; to 32 (docs/mvp-isa.md `### Engine state`), so with AUTOPULL on
+                               ; the *background* autopull would take a word on the engine's very
+                               ; first SM cycle anyway -- which works, but the host cannot see it
+                               ; happen and would have to push one extra word per frame.  A PULL
+                               ; does the same thing where the host can read it, and it stalls
+                               ; rather than inventing data if the FIFO is empty.
+        set pins, 1           ; level register = mark while the pin is still an input, so the
+        set pindirs, 1         ; line goes straight to mark: driving first would put a SPACE
+                               ; on an idle bus, which is a break of the wrong length.  The host
+                               ; also forces both of these through SMe_INSTR before it starts the
+                               ; engine (docs/mvp-regmap.md `### Typical host sequences`), so they
+                               ; are belt and braces rather than the only thing holding the line.
+packet:             ; word 3.  One frame starts here; `jmp packet` at the end repeats it.
+        set y, (BREAK_ITERS - 1)
+                               ; Y = the break loop's counter.  Every loop in this program
+                               ; tests its counter at the *bottom* of its body, so it runs
+                               ; one pass more than the counter holds (`docs/mvp-isa.md` JMP:
+                               ; x-- writes X - 1 whether or not the branch is taken) -- hence
+                               ; the -1, so that BREAK_ITERS is the number of space passes.
+                               ; SET's data field is 5 bits (0..31), which is the tightest
+                               ; limit on the frame this program can send.
+brk:                ; word 4.  BREAK: a space at least as long as the tables ask (92 us).
+        set pins, 0 [31]      ; 32 SM cycles of space per iteration, the longest one word can
+        jmp y-- brk           ; be; the jmp is 1 SM cycle, so an iteration is 33.
+                               ; The MAB: three mark instructions, 32 + 32 + 25 SM cycles,
+                               ; which is 712 ticks at 250 kbit/s (>= 600) and more at the
+                               ; other legal bit rates, whose bit is longer.
+        set pins, 1 [31]
+        set pins, 1 [31]
+        set pins, 1 [BIT_DELAY]
+        set x, (SLOTS - 1)    ; X = the slot loop's counter: SLOTS passes, 1..31 slots.
+slot:               ; word 10.  One slot: start bit, 8 data bits LSB first, 2 stop bits.
+        set pins, 0 [BIT_DELAY]   ; start bit: a space for a whole bit time (table 5)
+        out pins, 1 [BIT_DELAY]   ; data bit 0 (least significant first)
+        out pins, 1 [BIT_DELAY]   ; data bit 1
+        out pins, 1 [BIT_DELAY]   ; data bit 2
+        out pins, 1 [BIT_DELAY]   ; data bit 3
+        out pins, 1 [BIT_DELAY]   ; data bit 4
+        out pins, 1 [BIT_DELAY]   ; data bit 5
+        out pins, 1 [BIT_DELAY]   ; data bit 6
+        out pins, 1 [BIT_DELAY]   ; data bit 7, which also pulls the next slot's byte
+        set pins, 1 [BIT_DELAY]   ; stop bit 1: mark, or the slot is improperly framed (9.1)
+        set pins, 1 [BIT_DELAY]   ; stop bit 2: mark, likewise
+        jmp x-- slot [BIT_DELAY]  ; X = slots left, and one bit time of mark between slots,
+                                   ; which clause 8.8 wants and table 6 designator 9 allows.
+                                   ; So a slot is 12 bit times on the wire, not 11: the frame
+                                   ; is slower than the tables' minimum update time and the
+                                   ; grid every bit edge sits on is unbroken.
+        set y, PAD_OUTER    ; Pad the line to mark before the next BREAK.  Clause 8.7 sets no
+                             ; minimum number of data slots but 8.10 sets a minimum packet
+                             ; time, so a short frame is only legal with this loop: two
+                             ; nested counters, each a 5-bit immediate, multiply out to
+                             ; (PAD_INNER + 1) * (PAD_OUTER + 1) passes of 33 SM cycles.
+pad_r:  set x, PAD_INNER    ; the outer loop jumps *here*, so every outer pass reloads the inner
+                             ; counter: jumping into the inner loop instead would run it once
+                             ; and change the padding by a factor of PAD_INNER.
+pad_i:  set pins, 1 [31]   ; 32 SM cycles of mark per inner pass
+        jmp x-- pad_i      ; x-- falls through to pad_o when the inner count is done
+pad_o:  jmp y-- pad_r      ; one outer pass, then the whole inner loop again
+        jmp packet         ; and the next frame's BREAK falls right here

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+tools/bench/results/
+fw/sim_build/
+sim_build/
+results.xml
+runs/
+*.vcd
+*.fst
+results-mutants/

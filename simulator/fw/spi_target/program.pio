@@ -1,0 +1,140 @@
+;
+; SPI *target* (device mode) for the MVP chip -- an SPI NOR flash answering 0x9F
+; (JEDEC ID) and 0x03 (READ, 24-bit address, sequential data), SPI mode 0.
+;
+; The device-mode counterpart of fw/spi/program.pio: there the engine drives SCK and
+; follows, here it watches SCK and answers inside the bit period.  What that costs is the
+; whole point of this firmware: an answer
+; cannot leave the engine before the edge has been *seen*, and on this chip seeing an
+; edge costs T_IN = 3 core cycles.
+;
+; Where the pins are
+; -----------------
+; docs/mvp-isa.md `### The 18 protocol pins`, indices 0..17.  Note the order: MOSI and
+; SCK are swapped relative to fw/spi/program.pio, and that is forced, not cosmetic.
+;
+;   pin 0  CSn    input.  `wait 0 gpio 0`, the absolute GPIO source.
+;   pin 1  MOSI   input.  IN_BASE = 1, so `in pins, 1` takes IN_ROT bit 0 = pin 1.
+;   pin 2  SCK    input.  `wait 0/1 gpio 2`.
+;   pin 3  MISO   output.  OUT window (OUT_BASE = 3, OUT_COUNT = 1).  Its *direction* is
+;                 set once per transaction by the host's forced `set pindirs, 1` over the
+;                 SET window (SET_BASE = 3, SET_COUNT = 1).
+;
+; Why IN_BASE = 1 and not fw/spi's 2:
+;
+;   * `in pins, n` samples IN_ROT, "the 32-bit synchronized input vector rotated right by
+;     IN_BASE, so bit 0 is pin IN_BASE" (docs/mvp-isa.md `### IN`).  A target must
+;     *receive* MOSI, so IN_BASE has to be MOSI's index.
+;   * the two clock lines are watched with the *absolute* source, `wait <pol> gpio <n>`
+;     (`### WAIT Source`: "GPIO (absolute pin Index)"), not with the relative `pin` source.
+;     That is a choice, and it is the one that keeps the pin map free: `pin` is relative to
+;     IN_BASE, so using it would force SCK to be exactly one pin above MOSI and CSn to be one
+;     below.  With `gpio` the four lines can be any four distinct `uio` pins, which
+;     `test_the_four_lines_can_be_on_any_four_pins` runs on four different maps.
+;   * CSn is pin 0 here because that is where fw/spi puts it and where the test wires it, so
+;     both firmwares share the CSn net and differ on MOSI and SCK.
+;
+; No side-set: the target drives exactly one pin, MISO, and does it through the OUT
+; window, so SIDESET_COUNT = 0 and the whole delay field (bits 12:8) is delay.  It buys
+; nothing here and costs the loop two of the three slots a bit period has at the fastest
+; rate below.
+;
+; The loop, one bit = five instructions and nothing else
+; ------------------------------------------------------
+;
+;   wait 0 gpio SCK   the launch edge.  Mode 0 is CPOL 0, so the target changes MISO on
+;                     the falling edge and the master samples it on the next rising edge
+;                     (docs/mvp-regmap.md `### Physical layer`) -- which is what
+;                     verif/vip/spi.py `SpiFlashTarget` does: `_launch()` on a non-capture
+;                     edge, `_capture()` on a capture edge.
+;   out pins, 1       one MISO bit: the MSB of the OSR (OUT_SHIFTDIR = 0).
+;   wait 1 gpio SCK   the capture edge.
+;   in pins, 1        one MOSI bit into the ISR, autopushed to the RX FIFO every eight
+;                     bits (PUSH_THRESH = 8), so the host reads back what was received.
+;   jmp !osre, ...    osr_cnt is the byte counter: it counts bits shifted out, and
+;                     `!OSRE` is "osr_cnt < thresh(PULL_THRESH)" (docs/mvp-isa.md
+;                     `### Field values`), so with PULL_THRESH = 8 the loop falls out
+;                     once per byte with no bit counter and no `set y, 7`.
+;
+; The two waits are *level* waits, so they are edge detectors only because the loop keeps
+; up.  That is why a `pull block` that stalls on an empty TX FIFO is fatal rather than
+; slow: the phase is lost for the rest of the transaction, because the next `wait 1`
+; completes on the level it already sees.  The host must stay a word ahead.
+;
+; The byte boundary is the last three words and it is why this loop is nine words:
+;
+;   jmp pin, idle    JMP_PIN = CSn (EXECCTRL 28:24), and `jmp pin` tests IN_VEC[JMP_PIN],
+;                    so this parks the engine when the master has released the bus.  It
+;                    costs nothing on the hot path and it is what stops the loop from
+;                    free-running while CSn is high: `wait 0 gpio SCK` completes at once
+;                    then, so without this check the engine would spin on a low SCK,
+;                    shifting MISO and filling the RX FIFO after the transaction ended.
+;   pull block       AUTOPULL is *off*, so this is the only refill, and with IfEmpty clear
+;                    it always pops (docs/mvp-isa.md `### PULL`).  AUTOPULL is off
+;                    because with it on, `pull` is a no-op whenever osr_cnt == 0
+;                    ("the OSR is full, so PULL is a barrier"), and the host's pre-load
+;                    before the transaction has to work every time.
+;   (word 8)         `.wrap last` sends the PC back to `bit_loop`, so the boundary costs
+;                    no jump instruction.  That is the one slot that makes the fastest
+;                    rate below reachable at all.
+;
+; Timing, and the headline number
+; ----------------------------------------
+; The engine sees the pad three core cycles late (T_IN = 3, docs/mvp-isa.md `## Timing`)
+; and its pin write reaches the net one core cycle later (T_OUT = 1).  The master samples
+; MISO half a bit period after the launch edge:
+;
+;     MISO on the wire at T + 3 (T_IN) + 1 (the `out`) + 1 (T_OUT) <= T + half_period
+;     =>  half_period >= 5  =>  10 core cycles per bit  =>  5.00 MHz at 50 MHz.
+;
+; Measured, not argued, and quoted in
+; fw/spi_target/README.md.  half_period 5 sits exactly on the limit -- the bit arrives in
+; the very cycle the master samples it -- and half_period 4 is one core cycle short, which
+; shows up as MISO one bit late.  The tests run at half_period 6, the first value with a
+; core cycle to spare.
+;
+; With an integer divider INT the `out` retires INT core cycles after the wait retires, so
+; the bound is half_period >= 3 + INT + 1: the same three terms, of which the input
+; synchroniser is three and the instruction is one.  The loop's instruction count is not
+; the binding constraint at any rate -- five per bit against a minimum of 2 * half_period
+; core cycles -- and fw/spi_target/measure.py shows that by re-assembling a four-instruction
+; loop (the same program without its `jmp !osre`, using the wrap) and getting the same
+; ceiling.
+;
+; What this device cannot do
+; --------------------------
+; It cannot decode the opcode or index an array, and that is the ISA rather than the
+; program: `jmp pin` tests one pin (EXECCTRL.JMP_PIN) and the only pin carrying command
+; data is MOSI, so a target can branch on at most *one bit of the bit period being
+; clocked*, and only on the bit currently on the pin.  A received byte cannot be compared
+; with anything.  The response content therefore comes from the host over the TX FIFO, and
+; fw/spi_target/driver.py is what turns "READ 16 bytes from 0x30" into the byte stream a
+; flash would have shifted out.  fw/spi_target/README.md has the full list.
+;
+
+.program spi_target
+
+.wrap_target bit_loop
+.wrap last
+
+.define PUBLIC CS_PIN 0
+.define PUBLIC MOSI_PIN 1
+.define PUBLIC SCK_PIN 2
+.define PUBLIC MISO_PIN 3
+
+; The wrap region is the bit loop.  CSn high is not a state this program can sit in --
+; see `jmp pin, idle` -- so the engine is parked in `idle` whenever the master releases
+; the bus, and the host finds it there in SMe_ADDR.
+PUBLIC idle:
+    wait 0 gpio CS_PIN       ; CSn low: a transaction starts.  SCK idles low in mode 0, so
+    jmp bit_loop             ; this returns at once, before any edge, and the loop below
+                              ; launches its first bit into the quiet command byte.
+PUBLIC bit_loop:
+    wait 0 gpio SCK_PIN      ; launch edge (SCK fell)
+    out pins, 1              ; one MISO bit, the OSR's MSB
+    wait 1 gpio SCK_PIN      ; capture edge (SCK rose)
+    in pins, 1               ; one MOSI bit into the ISR, autopush every eight
+    jmp !osre, bit_loop      ; osr_cnt is the byte counter: fall out once per byte
+    jmp pin, idle            ; CSn high: the master is done, park
+last:
+    pull block               ; next MISO byte.  `.wrap last` returns to bit_loop.

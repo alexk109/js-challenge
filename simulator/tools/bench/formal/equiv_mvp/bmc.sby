@@ -1,0 +1,22 @@
+# SymbiYosys miter of the original MVP pio_chip against the current one at default parameters (see README.md).
+# prove = BMC to `depth`, then k-induction. Plain k-induction on a miter does not close without the register
+# correspondence (the free initial state of the two designs may differ); that all-time argument is equiv.ys.
+[options]
+mode bmc
+depth 40
+
+[engines]
+abc bmc3
+
+[script]
+plugin -i slang
+read_slang --top miter orig/pio_clkdiv.sv orig/pio_fifo.sv orig/pio_engine.sv orig/pio_chip.sv new/pio_clkdiv.sv new/pio_fifo.sv new/pio_engine.sv new/pio_chip.sv miter.sv
+prep -top miter
+flatten
+memory_map
+async2sync
+
+[files]
+build/orig
+build/new
+miter.sv

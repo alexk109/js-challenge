@@ -1,0 +1,11 @@
+{
+  "//": "Routability/timing of a private flop IMEM (32x24 + fetch IR) at 60% util, TT layer limits.",
+  "kind": "block",
+  "top": "probe_imem_ff",
+  "sources": ["phys/probes/rtl/probe_imem.sv"],
+  "params": {"IMEM_DEPTH": 32},
+  "core_util": 60,
+  "clock_period": 20,
+  "tag": "early-probe",
+  "librelane": {"USE_SLANG": true, "SYNTH_PARAMETERS": ["DEPTH=32", "W=24"]}
+}

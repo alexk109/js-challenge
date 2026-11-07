@@ -1,0 +1,183 @@
+;
+; MDIO/MDC station management entity, IEEE 802.3 clause 22, for the MVP chip.
+;  One frame is 64 bit times: 32 preamble ones, ST = 01,
+; OP = 10 read / 01 write, PHYAD[4:0], REGAD[4:0], TA (2 bits), DATA[15:0].
+;
+; THE CHIP IS THE STATION.  Clause 22 has exactly one station per bus and it owns
+; MDC ("MDC is sourced by the external management entity",
+; research/ref/protocols/mdio/ti-dp83tc811-smi.txt), so the PIO drives the clock and
+; the data, and the PHYs at the other end only answer a read's turnaround and data
+; bits.  That is the side the models in verif/vip/mdio.py can be used against: the
+; `MdioStation` model is a station, so it is the thing this firmware replaces, while
+; `MdioPhy` and `MdioChecker` stay on the bus as the judge.
+;
+; Where the pins are
+; -----------------
+; Both lines must be uio pins (0..7): MDIO is bidirectional and only a uio pin has a
+; direction register (docs/mvp-isa.md `## The 18 protocol pins`).  MDC_PIN is the pin
+; below MDIO_PIN, so that one 2-pin SET window covers both with MDC at data bit 0.
+; The order matters: a read releases MDIO with `set pindirs, 1`, and with MDC at bit 0
+; that spells "MDC stays driven, MDIO is released".  With the pins the other way round
+; the same instruction would release MDC in the middle of a bit time and the pull-up
+; would pull the clock high early, in the middle of the low phase.
+;
+;   side-set, 1 bit, SIDESET_BASE = MDC_PIN, SIDE_EN = 0
+;       side 0 = MDC low, side 1 = MDC high.  There is no `opt`, so *every*
+;       instruction writes this bit: an instruction without a `side` operand drives
+;       MDC low, so every instruction inside a high phase has to say `side 1`.  That
+;       includes the `pull block` between two words of one frame, which must not make
+;       an edge of its own, and the `halt` loop, which parks MDC high.
+;   OUT window, 1 pin, OUT_BASE = MDIO_PIN, OUT_COUNT = 1
+;       `out pins, 1` puts one OSR bit on MDIO.  SHIFTCTRL.OUT_SHIFTDIR = 0 (shift
+;       left), so bit 31 leaves first and the host packs each word with the frame's
+;       first bit in bit 31: MDIO is MSB first, as clause 22 is.
+;   SET window, 2 pins, SET_BASE = MDC_PIN, SET_COUNT = 2
+;       `set pins, 3` parks the bus idle (MDC high, MDIO high) and `set pindirs, 3`
+;       drives both pins.  One `set` cannot write a level and a direction through one
+;       window, so the level rides on the data bits and the directions are a separate
+;       instruction, exactly as in fw/uart_tx/program.pio.  The host forces *both* of
+;       those, once at startup and again before every frame: docs/mvp-regmap.md
+;       `### Typical host sequences` step 4 says the host sets the initial pins with
+;       forced `set pins` / `set pindirs` instructions, and it has to be per frame
+;       because a read leaves MDIO released for the turnaround and the next frame has
+;       to drive it again.  Neither frame label starts with a pin instruction, so MDC
+;       falls exactly one bit time after the jump rather than two: at 2.5 MHz that is
+;       the difference between a 21 and a 11 SM cycle opening low phase, and the 60-tick
+;       window `MdioChecker` uses for `idle` before it has measured the bus's own bit
+;       time (3 x the 400 ns spec minimum) is shorter than 21 SM cycles once CLKDIV
+;       stretches a bit time past 500 ns.
+;   IN window, IN_BASE = MDIO_PIN: `in pins, 1` samples MDIO for a read.
+;
+; Counting 64 bit times without a counter register
+; ------------------------------------------------
+; A 5-bit SET immediate cannot hold 64, and a 32-bit counter has to be built from two
+; registers and a nested loop, which costs more words than the frame can spare.  The
+; OSR counts itself: PUSH/PULL leave `osr_cnt` at 0 after a load and `out pins, 1`
+; raises it by one per bit time, and `jmp !osre` branches exactly while
+; `osr_cnt < thresh(PULL_THRESH)` (docs/mvp-isa.md `### Field values`).  With
+; PULL_THRESH = 32 (the field value 0) and AUTOPULL **off**, `jmp !osre` therefore
+; counts one 32-bit word, and a clause 22 frame is exactly two words.  AUTOPULL has to
+; be off because a refill would reset `osr_cnt` to 0 and the loop would never end; the
+; second word of a frame is fetched by an explicit `pull block` instead, and the host
+; primes the first one with a forced `pull block` before it jumps to a frame label
+; (the same mechanism docs/mvp-regmap.md `### Typical host sequences` uses to set the
+; PC, since the host cannot write SMx_ADDR).
+;
+; One bit time is three instructions and (1 + LOW_DELAY) + (1 + HIGH_DELAY) + 1 = 20
+; SM cycles, so CLKDIV = 1.0 gives 20 core cycles = 400 ns: the fastest legal MDC
+; period (LAN8720A Table 5.12 `tclkp` 400 ns min, so MDC <= 2.5 MHz).  Two bit times
+; per frame are 22 core cycles long, because a `pull block` and a `set` sit in the MDC
+; high phase where they belong; both are above the 400 ns floor, so the bus never
+; goes faster than clause 22 allows.  The host picks any slower rate with CLKDIV, and
+; fw/mdio/driver.py derives the divisor from these delay fields rather than from a
+; number typed in beside them.
+;
+; Host protocol.  For each frame the host pushes two TX words (the 32 preamble ones,
+; then one word holding ST..DATA), forces `pull block` to load the first into the OSR,
+; and forces `jmp write_frame` or `jmp read_frame` into SMx_INSTR.  SHIFTCTRL is
+; AUTOPUSH with PUSH_THRESH = 18 and both shift directions left.
+;
+; Three things the RP2040 pico-examples do differently here, all of them from
+; docs/mvp-isa.md and none of them from memory of those programs:
+;   * There is no IRQ, so nothing can be parked in `irq wait`; the program idles in
+;     `halt` (address 0, the wrap bottom, where SM_RESTART leaves the PC) and the
+;     host sees the PC in SMx_ADDR.
+;   * AUTOPUSH replaces `push`: a read's 18 samples (TA1, TA2 and DATA[15:0])
+;     fill the ISR and the eighteenth pushes one RX word: no explicit `push`.
+;   * A read's turnaround and data cannot be `out pins, 1`, because the PHY owns MDIO
+;     there; the program releases the pin and samples instead.
+;
+; Driving 1 on MDIO
+; ------------------
+; MDIO is a bidirectional line with a pull-up, and the reference station in
+; verif/vip/mdio.py releases the line rather than driving a 1 (`MdioStation` "may drive a 0").
+; This program drives both levels instead, because the MVP has no OE inversion
+; (docs/mvp-isa.md `### Open drain`): the control phase of a frame carries ones -- 32 of them
+; in the preamble -- and the only way to put a 1 on MDIO is to drive it.  On the reference bus
+; that is indistinguishable from releasing it, because the net is wired-AND with `pullup = 1`
+; and a drive of 1 and a release both read as 1; and it never meets a PHY driving 0, because the
+; program has released the pin for the whole turnaround and data field, which is the one place
+; a PHY drives.  `fw/mdio/test_mdio.py` plants the opposite fault -- a read that keeps driving
+; through the turnaround -- and `MdioChecker` reports it as `contention` and `TA1`.
+
+.program mdio
+.side_set 1                      ; one side-set bit = MDC's level, no `opt`
+
+.define LOW_DELAY 9              ; MDC low phase:  1 + 9 = 10 SM cycles
+.define HIGH_DELAY 8             ; MDC high phase: 1 + 8 = 9, + 1 for the jmp = 10
+
+; ---------------------------------------------------------------------------------
+; The idle loop, at address 0 so that SM_RESTART (which keeps PC = 0) parks the
+; engine here by itself.  `side 1` keeps MDC high, which is the idle state of the
+; bus: the checker's `idle` rule wants MDC parked high, and MDIO is the pull-up's.
+; ---------------------------------------------------------------------------------
+PUBLIC halt:
+        jmp halt side 1
+
+; ---------------------------------------------------------------------------------
+; A write frame: 64 bit times, all of them ours, so two words of 32 and nothing else
+; in the loop.  The host has pulled the first word into the OSR before it jumps here.
+; ---------------------------------------------------------------------------------
+PUBLIC write_frame:
+wbit:  out pins, 1 [LOW_DELAY] side 0         ; MDC low, MDIO = the next OSR bit.  This is
+                                             ; where MDC falls, so a frame's opening low
+                                             ; phase is exactly one bit time; see the note
+                                             ; on what the host primes in the header
+        nop [HIGH_DELAY] side 1               ; MDC high: every device samples MDIO on
+                                             ; this edge.  The bit has been stable
+                                             ; since the low phase began (tSU) and
+                                             ; stays stable for a whole high phase
+                                             ; before the next change (tH)
+        jmp !osre wbit side 1                 ; 32 bit times per word, MDC still high
+        jmp y-- wend side 1                   ; the host primed Y with 0, so this falls
+                                             ; through to the second word; Y is then
+                                             ; 0xffffffff and the next test exits
+wpull: pull block side 1                     ; Y was 0, so one word still to come: the
+        jmp wbit side 1                      ; frame's second word, fetched with MDC
+                                             ; high, so no edge of its own
+wend:  set pindirs, 1 side 1                  ; release MDIO: the bus has to come back
+                                             ; to the pull-up while it is idle, and
+                                             ; the last data bit may have been a 0
+        jmp halt side 1
+
+; ---------------------------------------------------------------------------------
+; A read frame.  Same 64 bit times, but only the first 46 of them are ours (bits 0..45
+; end at REGAD), so the program releases MDIO and stops driving for the turnaround and
+; the 16 data bits.
+; ---------------------------------------------------------------------------------
+PUBLIC read_frame:
+rbit:  out pins, 1 [LOW_DELAY] side 0         ; preamble, ST, OP, PHYAD, REGAD[4:1].  This
+                                             ; instruction is also where MDC falls, which
+                                             ; makes the opening low phase one bit time
+        nop [HIGH_DELAY] side 1
+        jmp !osre rbit side 1                 ; 32 bit times: the whole preamble word
+        pull block side 1                     ; ST..REGAD in the frame's second word
+        set x, 13 side 1                      ; of which only the first 14 bits are
+                                             ; ours (a `jmp x--` body runs one more
+                                             ; time than the count it was given)
+rbit2: out pins, 1 [LOW_DELAY] side 0         ; the turnaround and the data
+        nop [HIGH_DELAY] side 1               ; belong to the PHY, and driving MDIO
+        jmp x-- rbit2 side 1                  ; there would be contention on the bus
+        set pindirs, 1 [7] side 0             ; release MDIO: "no device may actively
+                                             ; drive the MDIO signal during the first
+                                             ; bit of turnaround", and the PHY drives
+                                             ; the second turnaround bit and the data.
+                                             ; The delay keeps the release several cycles
+                                             ; ahead of the first sample below, which
+                                             ; would otherwise still see this chip's own
+                                             ; last data bit instead of the pull-up
+        set x, 17 side 0                      ; TA1, TA2 and the 16 data bit times
+tdata: in pins, 1 [LOW_DELAY] side 0          ; `in` reads the input vector three core
+        nop [HIGH_DELAY] side 1               ; cycles back (T_IN = 3, docs/mvp-isa.md
+        jmp x-- tdata side 1                  ; `## Timing`), so the sample taken in
+                                             ; bit time k is the bit that is on MDIO
+                                             ; during bit time k: the PHY launches each
+                                             ; bit two ticks after the edge that starts
+                                             ; its bit time, so bit k is stable from
+                                             ; then until the next edge, and the low
+                                             ; phase of bit time k is inside that
+                                             ; window.  The 18 samples are therefore
+                                             ; TA1, TA2 and DATA[15:0], and AUTOPUSH
+                                             ; at PUSH_THRESH = 18 puts exactly those
+                                             ; in one RX word, DATA in bits 15:0
+        jmp halt side 1

@@ -1,0 +1,194 @@
+; VARIANT of fw/i2c_target/program.pio for isa_cond: the two-word `jmp pin, counted` / `jmp data` becomes one
+; `jmpc pin_low, data` (-1 word, same 3 SM cycles per poll turn). Assemble with isa=("cond",).
+; I2C target (device mode) for the MVP chip: a 24C02-like EEPROM (task B3-FW-i2c_target).
+;
+; One program answers as a slave. The 256-byte memory, the write pointer, the page
+; rollover and the 7-bit address live on the host (fw/i2c_target/driver.py); this is the
+; wire engine: it sees a START, clocks bytes, drives the ACK or the NAK, sees a STOP.
+;
+; The one rule that shapes everything: a slave must never drive SCL.
+; ---------------------------------------------------------------------------------
+; Every SCL edge on the bus has to be the master's. A controller program owns the clock,
+; so fw/i2c/program.pio can pull SCL low the moment it has sampled and stretch as it
+; likes. A slave may not: the high period it shortens is the master's tHIGH, and the
+; checker measures the wire, not the intent. So this program has **no `.side_set` at
+; all** -- SCL is only ever read, with `wait 0/1 gpio SCL_PIN` -- and open drain on SDA
+; is done with the OUT/SET windows, which is all a target needs. The corollary is that
+; this program cannot stretch the clock: it has nowhere to put a `side 1`, because the
+; only place a slave may pull SCL low is *after* the master has released it, and this
+; program has no timer that could tell that moment from any other.
+;
+; Where the pins are
+; ---------------
+; Both lines must be uio pins, because open drain needs PINDIRS (docs/mvp-isa.md
+; `### Open drain`: the level register stays 0 and the program toggles the direction).
+; SCL = SDA_PIN + 1 so that one 2-pin window covers both.
+;
+;   OUT window, 1 pin, OUT_BASE = SDA_PIN, OUT_COUNT = 1
+;       `out pindirs, 1` writes SDA's direction from one OSR bit: 1 = pull low,
+;       0 = release.  This is the data and ACK bit, MSB first (OUT_SHIFTDIR = 0).
+;   SET window, 1 pin, SET_BASE = SDA_PIN, SET_COUNT = 1
+;       `set pindirs, 0` releases SDA without touching the OSR: the byte boundary uses it,
+;       because the ACK clock may have pulled SDA low and the bus may be about to go free.
+;   IN window, IN_BASE = SDA_PIN: `in pins, 1` samples SDA.
+;   `wait 1 gpio SCL_PIN` / `wait 0 gpio SCL_PIN` wait for the *bus* to read SCL high or
+;       low. Because the slave never drives SCL, every rise and fall it sees is the
+;       master's, which is what makes the program bit-synchronous with any master at any
+;       rate: it cannot clock a bit the master is not clocking, and it cannot lose one.
+;   EXECCTRL.JMP_PIN = SCL_PIN, so `jmp pin` in `poll` asks "is SCL still high?".
+;
+; Why this differs from the RP2040 pico-examples i2c.pio (docs/mvp-isa.md `### Open
+; drain` and `## Differences from RP2040`):
+;   * No OE inversion in the MVP pin mux, so the direction sense is the opposite:
+;     `out pindirs, 0` releases SDA and 1 pulls it low.
+;   * No IRQ and no `irq wait`, so nothing parks in `irq wait`; the program idles in
+;     `idle`, waiting for the bus, which is where a START is picked up.
+;   * A controller program enters a byte loop from the host and runs nine bit times.
+;     A slave is entered by the bus, so there is nothing to "enter": the loop below runs
+;     for ever, one master bit time at a time, and what a bit time *does* comes from the
+;     host through the FIFO.
+;
+; The host protocol, two 32-bit TX words per byte (fw/i2c_target/driver.py builds them):
+;   DATA word, pulled at `bnd`, before the byte:
+;     bits 31:24  the eight data bit times, as SDA directions: 1 pulls SDA low, 0
+;                 releases it.  A byte the slave receives is eight releases; a byte it
+;                 sends is the data bits inverted.  bits 23:0 are not read.
+;   ACK word, pulled after the seven bit times of `data`, before the ninth:
+;     bit 31      the ninth bit time, the ACK clock.  1 pulls SDA low (ACK), 0 releases
+;                 it (NAK, or the master's own ACK while the slave sends).  bits 30:0 are
+;                 not read.
+; The ACK word is pulled *after* the data bits on purpose: that is what lets the host
+; decide the ACK/NACK from the byte it has just received, which is the only way a target
+; can NACK an address that is not its own.
+; SHIFTCTRL: AUTOPULL off, PULL_THRESH 8 (the `jmp !osre` bit counter: one bit is taken
+; in `bnd` and seven in `data`), AUTOPUSH on, PUSH_THRESH 8 (one RX word per byte, and
+; at the *eighth* sample -- one whole bit time before the ACK clock, which is what leaves
+; the host time to answer with the ACK word), OUT_SHIFTDIR 0 and IN_SHIFTDIR 0.
+;
+; Two things this program cannot do, and both are worth saying plainly rather than
+; hiding. Clock stretching is one (no side-set, see above). The other is a *repeated*
+; START: a repeated START is SDA falling while SCL is high, and between the ACK clock
+; and the address byte that follows it the master releases SCL exactly as it releases it
+; for a bit time -- one rise, one fall, SDA high. The program cannot tell that from a bit
+; time without a timer whose value depends on the bus rate, so it clocks that window as
+; a bit time and the address byte after a repeated START comes back shifted by one bit.
+; A random read (write the pointer, repeated START, read) therefore does not work; every
+; other 24C02 access does, because every other one starts with a START from an idle bus,
+; where `idle` sees SDA fall and the alignment is exact.
+
+.program i2c_target
+
+.define PUBLIC SDA_PIN 0
+.define PUBLIC SCL_PIN 1
+
+; Delay on the two halves of a bit time, in SM cycles. Both are ZERO on purpose, and that
+; is the whole reason the program can keep up: the one thing that has to happen inside the
+; master's *high* period is the `in pins, 1` sample, and every SM cycle of delay here
+; pushes it one whole divider period further into that period, towards the SCL fall. The
+; timings are met without any delay, because of what the hold already costs: `wait 0 gpio
+; SCL` completes three core cycles (T_IN) after the master's SCL fall, and `out pindirs` is
+; the *next instruction the divider releases*, so the next bit reaches SDA one whole
+; divider period (CLKDIV + 1 core cycles) after that. Measured tightest hold of the PIO's
+; own moves at CLKDIV 5 is therefore 9 cycles, not the 3 the T_IN alone would give --
+; 3 + 6, with no phase left over. Fast mode and Fm+ require *zero* hold, which is why
+; there is room at all, and there are 9 cycles of it to spend; a single extra LOW_HOLD
+; would cost a whole divider period (6 core cycles at CLKDIV 5) and leave 3.
+; See fw/i2c_target/README.md `### Margins, measured off the wire`.
+.define LOW_HOLD 0
+.define HIGH_HOLD 0
+; POLL is how many times the program looks at SCL before calling the bus free, and it is
+; the one number in this program that is a *timing* assumption rather than a protocol fact:
+; it has to outlast one master high period (or the program would call a live bus free) and
+; come in before the master's bus-free time after a STOP (or the program would still be
+; looking when the next transaction starts). One loop is three SM cycles, so the host
+; computes it and patches the `set x` below -- the same trick fw/i2c/driver.py's `retarget`
+; plays with the SCL pin. Measured bounds are in fw/i2c_target/README.md.
+.define POLL 8
+
+.wrap_target idle
+.wrap idle_end
+
+; ---------------------------------------------------------------------------------
+; Idle: the bus is free, so SDA is released and the program waits for a START, which is
+; SDA falling. It then waits for SCL to fall: the master holds SCL high for tHD;STA after
+; a START, and until that fall there is no clock to sample. SCL is left alone in both
+; waits -- pulling it down and letting it up again would put a short high period on the
+; bus, which is a tHIGH and an fSCL the checker rightly objects to. From a START the
+; program goes to `bnd` like every byte boundary, because the address byte is a byte.
+; ---------------------------------------------------------------------------------
+idle:
+    wait 0 gpio SDA_PIN            ; the bus is free (SDA released): wait for it to fall
+    wait 0 gpio SCL_PIN            ; the master's tHD;STA, then its low phase
+    jmp bnd                        ; the address byte is an ordinary byte
+
+; ---------------------------------------------------------------------------------
+; Byte boundary. Three jobs, in this order, and the order is the whole trick:
+;
+;   1. release SDA, because the ACK clock may have pulled it low and the bus may be
+;      about to go free -- a slave that holds SDA low across a STOP stops the master from
+;      making one;
+;   2. pull the DATA word of the next byte and put its first bit on SDA, because that
+;      word is the host's to choose and the host is one byte behind on a read;
+;   3. sample that first bit, and only then ask whether the master is still there.
+;
+; Step 3 is the subtle one. "One more byte" and "the bus went free" look identical right
+; up to the next SCL rise -- for both, the master releases SCL -- and differ only after
+; it: for a further byte the master pulls SCL low again at the end of its high time, and
+; for a STOP it leaves SCL high and moves SDA instead. So the bit time is clocked (the
+; sample above), and only then a bounded wait watches for the fall that says the master
+; is still going. Timing out is not an error: it is how a STOP is recognised, and it
+; hands the host the marker word so that its EEPROM state machine knows the transaction
+; is over. Note what this cannot do: decide *before* the sample, because the only thing
+; that tells the two apart arrives after that bit time is over.
+; ---------------------------------------------------------------------------------
+bnd:
+    wait 0 gpio SCL_PIN [LOW_HOLD] ; the master's fall, then the tHD;DAT hold.  This comes
+                                    ; BEFORE the release below, and it has to: the ACK
+                                    ; clock may have pulled SDA low, and letting go of it
+                                    ; while SCL is still high would be a STOP on the wire
+                                    ; (tSU;STO) and the start of the next transaction
+                                    ; lost.
+    set pindirs, 0                 ; release SDA (it may be our own ACK)
+    pull block                     ; the DATA word of the next byte
+    out pindirs, 1                 ; SDA = its first bit
+    wait 1 gpio SCL_PIN [HIGH_HOLD]; the master's rise: the next bit time, or the last one
+    in pins, 1                     ; sample it
+    set x, POLL                    ; patched by the host: see POLL above
+poll:
+    jmpc pin_low, data             ; (isa_cond) SCL fell: the rest of this byte is still coming
+    jmp !x, stop_path              ; SCL still high, out of patience: the bus went free
+    jmp x-- poll                   ; else count and look again
+
+; ---------------------------------------------------------------------------------
+; The seven bit times the byte still needs, and the `jmp !osre` bit counter. PULL_THRESH
+; is 8 and one bit was already taken in `bnd`, so this runs seven times; when it falls
+; through, the ninth bit time follows on the ACK word the host has just pushed.
+; ---------------------------------------------------------------------------------
+data:
+    wait 0 gpio SCL_PIN [LOW_HOLD] ; the master's fall, then the tHD;DAT hold
+    out pindirs, 1                 ; SDA = the next OSR bit
+    wait 1 gpio SCL_PIN [HIGH_HOLD]; the master's rise, then the sample point
+    in pins, 1                     ; sample SDA
+    jmp !osre, data                ; seven times
+    pull block                     ; the ACK word: bit 31 drives the ACK clock
+
+; ---------------------------------------------------------------------------------
+; The ninth bit time, the ACK clock. Sampling it costs nothing (the same instruction
+; samples whatever is on SDA) and it is what tells the host whether a byte it sent was
+; ACKed, in RX bit 0. Then on to the next byte.
+; ---------------------------------------------------------------------------------
+ack:
+    wait 0 gpio SCL_PIN [LOW_HOLD] ; the master's fall, then the tHD;DAT hold
+    out pindirs, 1                 ; SDA = ACK (pull low) or NAK (released)
+    wait 1 gpio SCL_PIN [HIGH_HOLD]; the master's rise
+    in pins, 1                     ; sample SDA: our ACK, or the master's ACK
+    mov isr, x                    ; and forget it: PUSH_THRESH 8 already handed the
+                                  ; byte over, and a ninth sample left in the ISR would
+                                  ; make the next byte autopush one bit early
+    jmp bnd                        ; and on to the next byte
+
+stop_path:
+    mov isr, y                    ; the marker, Y = 0x8000001f loaded once by the host
+    push                           ; AUTOPUSH cannot fire: `mov isr` left isr_cnt = 0
+idle_end:
+    jmp idle                       ; wrap: running off the end lands in `idle`

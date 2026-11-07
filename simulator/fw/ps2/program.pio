@@ -1,0 +1,169 @@
+; PS/2 controller (the host side) for the MVP chip (task B1-FW-ps2).
+;
+; The chip plays the *controller*: it generates the clock for a byte it sends, and it reads
+; the clock the device generates for a byte it receives. That is the whole difficulty of
+; PS/2 in a PIO (research/ref/protocols/ps2/README.md, "Why PS/2"), and it is why this
+; program is two loops over the same two pins rather than one state machine.
+;
+; Where the pins are
+; ---------------
+; Both PS/2 lines are open collector with a pull-up, so both must be uio pins: open drain
+; is a *direction* in the MVP, the level register stays 0 and the program toggles the
+; direction (docs/mvp-isa.md `### Open drain`). DATA = CLK_PIN + 1 by convention so that
+; the two pins are adjacent; only the side-set window and the OUT window care.
+;
+;   side-set, 1 bit, SIDESET_BASE = CLK_PIN, SIDE_PINDIR = 1
+;       side 0 -> CLK released (the pull-up makes the line high), side 1 -> CLK pulled low.
+;       There is no `opt`, so *every* instruction writes this bit: `side 1` is the clock's
+;       low period and `side 0` its high period. The clock is nothing but this bit.
+;   OUT window, 1 pin, OUT_BASE = DATA_PIN, OUT_COUNT 1
+;       `out pindirs, 1` writes DATA's direction from one OSR bit: 1 = pull low, 0 =
+;       release. OUT_SHIFTDIR is 1 (LSBs first, the reset value), so the frame bits leave
+;       the OSR from bit 0 upwards: start, d0..d7, parity, stop (fw/ps2/driver.py inverts
+;       them, because a direction of 1 is a driven 0).
+;   IN window, IN_BASE = DATA_PIN: `in pins, 1` samples DATA and `wait 0 pin 0` watches
+;       DATA for the start bit.
+;   `wait 0 gpio CLK_PIN` / `wait 1 gpio CLK_PIN` watch the clock line itself. The GPIO
+;       source takes an absolute pin index (docs/mvp-isa.md `### Field values`), which is
+;       what lets the program sample DATA through the IN window *and* watch CLK.
+;
+; The two directions
+; ------------------
+; * host -> device: eleven clocks carry start, eight data bits, odd parity and the stop
+;   bit; the twelfth clock is the device's acknowledgement, which it drives by pulling
+;   DATA low while we hold the clock low and then release it. We sample that bit and push
+;   it to the host, so the driver can tell an acknowledged byte from a dropped one.
+; * device -> host: the device generates the clock and puts the next bit on DATA inside
+;   the *high* phase, so the bit is sampled on the falling edge (the AT table: "Data sent
+;   by keyboard to PC are read during falling edge of the clock"). The loop waits for the
+;   falling edge and then samples, which is safe because DATA holds the bit for the whole
+;   low phase (30..50 us against T_IN = 3).
+;
+; The host protocol (fw/ps2/driver.py)
+; -----------------------------------
+;   force `jmp send`            clock one byte out; the word is already in the TX FIFO
+;   force `set y, n` + `jmp recv`  take n+1 bytes from the device, one frame each
+; The engine parks in `idle` with both lines released between transactions. There is no
+; IRQ in the MVP, so the host sees the phase through SM0_ADDR and the FIFOs: `send` ends
+; with one RX word holding the acknowledgement, `recv` with one RX word per byte.
+;
+; Why this differs from anything written for the RP2040:
+;   * No IRQ, so nothing waits in `irq wait`; the idle state is a `jmp`.
+;   * The MVP has no OE inversion, so "1" on a PS/2 line means *drive it low* and the
+;     host inverts the frame bits it pushes (docs/mvp-isa.md `### Open drain`).
+;   * 32 words of IMEM: both directions fit in one program, but a loop per bit is what
+;     keeps it that way. Unrolling the eleven clocks would need 33 words on its own.
+
+.program ps2
+.side_set 1 pindirs             ; the side-set drives CLK's direction, not its level
+
+.define PUBLIC CLK_PIN 0
+.define PUBLIC DATA_PIN 1
+
+; Delays are in SM cycles; the host picks CLKDIV so that one SM cycle is 2 us (fast) or
+; 2.8 us (slow), which puts both clock phases inside the 30..50 us of T3/T4 and T7/T8.
+.define LOW_HOLD 15     ; CLK low, DATA already valid: tHD;DAT and the first half of tLOW
+.define HIGH_HOLD 15    ; CLK high: the device samples DATA at the start of it, so tHIGH
+.define ACK_LOW 14      ; CLK low before the acknowledgement clock, and DATA must already
+                        ; be released there, which the stop bit (a 1) has done
+.define RTS_HOLD 15     ; one quarter of the >= 100 us request-to-send
+
+.wrap_target idle
+.wrap idle
+
+; ---------------------------------------------------------------------------------
+; Parked: both lines released, so the bus reads high and a device may start a frame.
+; Running off either end of the program lands here, which is what the wrap window is for.
+; ---------------------------------------------------------------------------------
+init:
+    jmp idle side 0
+
+; ---------------------------------------------------------------------------------
+; host -> device. The host forces `jmp send` with the byte already in the TX FIFO.
+;
+; The sequence on the wire, and who owns each edge:
+;   1. CLK low (the side-set of the first instruction) with DATA released: that falling
+;      edge is the request-to-send, and it is what the checker watches for `tRTS`.
+;   2. 100 us of it, counted by Y, before the start bit goes down.
+;   3. DATA low (the start bit, inverted in the TX word) while CLK is low: the device
+;      sees its start bit and arms.
+;   4. eleven clock periods, one per bit, DATA moving in the low phase (tHD;DAT).
+;   5. one more clock period with DATA released: the device's acknowledgement, which
+;      is the one clock whose low phase is a whole SM cycle shorter, and therefore the
+;      shortest rise-to-rise gap on a host frame.
+; ---------------------------------------------------------------------------------
+send:
+    pull block side 1 [0]            ; the frame word, LSB first. A stalled pull holds CLK
+                                    ; low, which is legal: the request-to-send only gets
+                                    ; longer, and the bus is quiet to begin with.
+    set y, 4 side 1                 ; CLK goes low here: the request-to-send starts
+rts_wait:
+    jmp y-- rts_wait side 1 [RTS_HOLD]    ; 5 * (1 + 15) SM cycles, 200 us at CLKDIV 100,
+                                         ; comfortably over the 100 us the Gdansk page asks
+                                         ; for. No upper limit applies to tRTS.
+    set x, 10 side 1                ; eleven clocks: ten loop-backs and the fall-through
+    jmp txloop side 1 [0]
+
+txloop:
+    out pindirs, 1 side 1 [LOW_HOLD]    ; DATA = the next frame bit (a direction: 1 pulls
+                                       ; the line low), CLK still low, tHD;DAT
+    nop side 0 [HIGH_HOLD]              ; CLK released: this is the rising edge the device
+                                       ; samples this bit on, and the high period
+    jmp x-- txloop side 1 [0]           ; CLK low again for the next bit; X-- and loop,
+                                       ; the eleventh one falls through
+    nop side 1 [ACK_LOW]                ; the low period before the acknowledgement clock.
+                                       ; The stop bit has been clocked and it is a 1, so
+                                       ; DATA is already released and the device owns it.
+    in pins, 1 side 0 [HIGH_HOLD]       ; CLK released: the twelfth clock, and the bit on
+                                       ; DATA is the device's acknowledgement (low = ACK).
+                                       ; Sampled 15 SM cycles into the low period, long
+                                       ; after the device pulls DATA low and long before
+                                       ; this instruction releases the clock.
+    push noblock side 0                ; one RX word for the host: bit 0 is the ack bit
+
+; ---------------------------------------------------------------------------------
+; Parked: both lines released, so the bus reads high and a device may start a frame.
+; The send path falls into it, and the wrap window puts anything that runs off either end
+; of the program here too, which is why it sits between the two directions.
+; ---------------------------------------------------------------------------------
+idle:
+    jmp idle side 0
+
+; ---------------------------------------------------------------------------------
+; device -> host. The host forces `set y, n` (n more frames after this one) and `jmp
+; recv`. Eleven samples per frame; AUTOPUSH at eleven bits puts one RX word per byte.
+; ---------------------------------------------------------------------------------
+recv:
+    wait 0 pin 0 side 0 [0]        ; DATA falls on an idle-high clock: the start bit. The
+                                   ; entry condition, and the reason the host may only
+                                   ; enter here while the bus is free.
+    set x, 10 side 0 [0]
+    jmp rxloop side 0 [0]
+
+rxloop:
+    wait 0 gpio CLK_PIN side 0 [0]     ; the falling edge, which is where the bit on the
+                                      ; wire is valid. The device changed DATA during the
+                                      ; high phase (T2/T1), so it has been stable since.
+    in pins, 1 side 0 [0]             ; sample it; eleven of these fill the ISR and
+                                      ; AUTOPUSH empties it into the RX FIFO
+    wait 1 gpio CLK_PIN side 0 [0]     ; wait for the rising edge before looking for the
+                                      ; next falling one: the clock stays low for a whole
+                                      ; bit time, so a loop that only waited for a falling
+                                      ; edge would run away and sample one bit per SM cycle
+    jmp x-- rxloop side 0 [0]         ; the eleventh one falls through. AUTOPUSH at eleven
+                                      ; bits empties the ISR into the RX FIFO here, so one
+                                      ; RX word is one frame and no push is needed. The ISR
+                                      ; then holds the frame in bits 10:0: the start bit in
+                                      ; bit 10, d0..d7 in bits 9:2 with d7 lowest, the
+                                      ; parity bit in bit 1 and the stop bit in bit 0,
+                                      ; because IN_SHIFTDIR 0 shifts each sample in at bit 0
+                                      ; and pushes the older ones up. PS/2 sends its data
+                                      ; bits LSB first, so the *first* one sampled ends up
+                                      ; at the top of the byte and it comes out reversed;
+                                      ; fw/ps2/driver.py `rx_byte` turns it round, and the
+                                      ; comment there says why `mov isr, isr r` is not used
+                                      ; instead (it moves the field, it does not flip it).
+    wait 1 gpio CLK_PIN side 0 [0]     ; the device released the clock: the frame is over
+    jmp y-- recv side 0 [0]           ; another frame wanted? Go back and wait for the
+                                      ; next start bit. Y is the host's count, so this
+                                      ; path stays armed while the device answers.

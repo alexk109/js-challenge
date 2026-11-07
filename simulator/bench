@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Single entry point: `./bench <command> ...` is `python -m tools.bench <command> ...` from any directory."""
+import os
+import runpy
+import sys
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, ROOT)
+if len(sys.argv) > 1 and sys.argv[1] == "ui":
+    from tools.ui_launch import main
+    sys.exit(main(sys.argv[2:]))
+sys.argv[0] = "bench"
+runpy.run_module("tools.bench", run_name="__main__", alter_sys=True)

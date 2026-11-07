@@ -1,0 +1,10 @@
+{
+  "//": "The MVP chip itself -- host_spi + pio_chip, exactly the source_files info.yaml hardens and the same test/test.py runs -- as a 6x4 TT user block. clock_period 20 ns is info.yaml's clock_hz (50 MHz). USE_SLANG, because five of the six sources are SystemVerilog (as in the stub-sv config).",
+  "kind": "tt",
+  "top": "tt_um_protocol_emulator",
+  "tiles": "6x4",
+  "sources": ["tt_um_protocol_emulator.v", "pio_chip.sv", "pio_clkdiv.sv", "pio_engine.sv", "pio_fifo.sv", "host_spi.sv"],
+  "clock_period": 20,
+  "tag": "mvp",
+  "librelane": {"USE_SLANG": true}
+}

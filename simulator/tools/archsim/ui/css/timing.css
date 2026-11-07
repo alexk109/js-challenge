@@ -1,0 +1,36 @@
+/* Timing styles. Scope every selector under .v-timing; colours only through tokens. */
+.v-timing .tm-sec { margin: 0 0 22px; }
+.v-timing .tm-sec h2 { font-size: 16px; margin: 0 0 6px; }
+.v-timing .tm-sec h3 { font-size: 13px; margin: 10px 0 4px; }
+.v-timing .tm-na { opacity: .85; }
+.v-timing .tm-chart { overflow-x: auto; max-width: 100%; }
+.v-timing .tm-chart svg { min-width: 560px; max-width: 100%; }
+.v-timing .legend { font-size: 12px; margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.v-timing .lg i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border: 1px solid var(--axis); }
+.v-timing .lnk { border: none; background: none; padding: 0; min-height: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
+.v-timing .tm-tbl summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.v-timing svg text.in { fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.v-timing svg .seg { cursor: pointer; }
+.v-timing svg .seg rect { stroke: var(--surface); stroke-width: 1; }
+.v-timing svg .seg:hover rect, .v-timing svg .seg:focus rect { stroke: var(--ink); stroke-width: 2; }
+.v-timing .k-pad { background: var(--s1); } .v-timing .k-sync { background: var(--s2); } .v-timing .k-sm { background: var(--s3); }
+.v-timing .k-out { background: var(--s4); } .v-timing .k-ext { background: var(--s5); } .v-timing .k-host { background: var(--s6); }
+.v-timing .k-lane { background: var(--s7); }
+.v-timing svg g.seg.k-pad rect { fill: var(--s1); } .v-timing svg g.seg.k-sync rect { fill: var(--s2); } .v-timing svg g.seg.k-sm rect { fill: var(--s3); }
+.v-timing svg g.seg.k-out rect { fill: var(--s4); } .v-timing svg g.seg.k-ext rect { fill: var(--s5); } .v-timing svg g.seg.k-host rect { fill: var(--s6); }
+.v-timing svg g.seg.k-lane rect { fill: var(--s7); }
+.v-timing .rx-u, .v-timing .clk-base { background: var(--s1); } .v-timing .rx-drift, .v-timing .clk-imem { background: var(--s2); }
+.v-timing .rx-jitter, .v-timing .clk-die { background: var(--s3); }
+.v-timing svg g.rx-u rect, .v-timing svg g.clk-base rect { fill: var(--s1); } .v-timing svg g.rx-drift rect, .v-timing svg g.clk-imem rect { fill: var(--s2); }
+.v-timing svg g.rx-jitter rect, .v-timing svg g.clk-die rect { fill: var(--s3); }
+.v-timing svg .deadline line { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 5 3; }
+.v-timing svg .whisk line { stroke: var(--ink); stroke-width: 1.5; }
+.v-timing svg .whisk line.nomtick { stroke-width: 2.5; }
+.v-timing svg .clk { stroke: var(--grid); stroke-width: 1; }
+.v-timing svg .wave { fill: none; stroke: var(--ink-2); stroke-width: 1.2; }
+.v-timing svg .edge .tol { fill: var(--s4); opacity: .25; } .v-timing svg .edge .ideal { stroke: var(--ink); fill: var(--ink); stroke-width: 1.5; }
+.v-timing svg .edge .placed { fill: var(--s2); stroke: var(--ink); } .v-timing svg .edge .err { stroke: var(--s2); stroke-width: 3; }
+.v-timing svg .edge .err.bad { stroke: var(--bad); }
+.v-timing .fig { background: var(--surface); overflow-x: auto; border: 1px solid var(--grid); }
+.v-timing .fig svg { min-width: 0; max-width: none; height: auto; }
+.v-timing .fig svg text { fill: var(--ink); stroke: none; }

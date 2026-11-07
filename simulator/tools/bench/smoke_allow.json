@@ -1,0 +1,218 @@
+[
+ {
+  "workload": "spi_host_port",
+  "metric": "read",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "ticks_per_sck_bit": 8
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "known harness defect in perf-b: verif/perf/hostport.py passes the 4 TA/dummy bytes in MOSI, so the read clocks 80 SCK rises instead of 48 (archsim keeps the 388-cycle framing)"
+ },
+ {
+  "workload": "spi_host_port",
+  "metric": "rxf0_burst_4",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "ticks_per_sck_bit": 8
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "same perf-b read harness defect as `read` (1604 measured vs 1348 framing)"
+ },
+ {
+  "workload": "jtag",
+  "metric": "max_bit_rate",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "speed": 1.0
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "archsim model max rate vs perf-b measured; perf-a/perf-b class DEF: a counts TMS+TDI as 2 wire bits per TCK; b counts scan payload bits incl. IR/DR overhead"
+ },
+ {
+  "workload": "swd",
+  "metric": "max_bit_rate",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "speed": 9.0
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "archsim model max rate vs perf-b measured; perf-a/perf-b class SUS: turnaround/idle inside the window"
+ },
+ {
+  "workload": "necir",
+  "metric": "max_bit_rate",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "speed": 7.0
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "archsim model max rate vs perf-b measured; perf-a/perf-b class OP: different S (a: 9, b: 7); b bench time base compressed 1:1000 and divided back"
+ },
+ {
+  "workload": "uart_tx",
+  "metric": "max_bit_rate",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "speed": 6250000.0
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "archsim model max rate vs perf-b measured; perf-a/perf-b class SUS: idle gap between frames (82 SM cycles per 10-bit frame)"
+ },
+ {
+  "workload": "manchester",
+  "metric": "max_bit_rate",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {
+   "speed": 12000000.0
+  },
+  "backends": [
+   "analytic"
+  ],
+  "reason": "archsim model max rate vs perf-b measured; perf-a/perf-b class SUS: preamble and inter-message gaps; b bit grid is 12 Mbit/s"
+ },
+ {
+  "workload": "chip",
+  "metric": "area_um2",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.30 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "stdcell_area_um2",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.30 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "cell_count",
+  "config_hash": "a20770391769cb40",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.45 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "area_um2",
+  "config_hash": "e0a8b7e3aa30535c",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.30 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "stdcell_area_um2",
+  "config_hash": "e0a8b7e3aa30535c",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.30 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "cell_count",
+  "config_hash": "e0a8b7e3aa30535c",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.45 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "area_um2",
+  "config_hash": "4ef31a1e970226ca",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.22 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "stdcell_area_um2",
+  "config_hash": "4ef31a1e970226ca",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.32 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "cell_count",
+  "config_hash": "4ef31a1e970226ca",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.45 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "area_um2",
+  "config_hash": "e38c0991a934b625",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.30 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "stdcell_area_um2",
+  "config_hash": "e38c0991a934b625",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.30 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ },
+ {
+  "workload": "chip",
+  "metric": "cell_count",
+  "config_hash": "e38c0991a934b625",
+  "workload_params": {},
+  "backends": [
+   "synth",
+   "flow"
+  ],
+  "reason": "not the same quantity: synth is Yosys cell area before placement; the flow adds buffers, resizing, the clock tree and tap/fill cells (flow/synth = 1.45 here; area 1.22-1.32 and cell count 1.43-1.45 over the configs run so far). A calibration factor for synth-only estimates, not a defect"
+ }
+]

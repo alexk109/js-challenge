@@ -1,0 +1,95 @@
+# Synthesis-only area probes (make synth-probe). Fast first-order numbers for
+# the Gate-2 decisions; P&R probes (make flow CFG=probe-*) replace them later.
+# Area is the mapped standard-cell area at nom_typ_1p20V_25C, no P&R overhead.
+
+files: &parts
+  - phys/probes/rtl/probe_sm_parts.sv
+replayfiles: &replayfiles
+  - phys/probes/rtl/probe_replay.sv
+
+probes:
+  # --- instruction memory, per SM, including the fetch-stage IR ---
+  imem-ff-32x16:    {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 32, W: 16}}
+  # The two depths an SRAM IMEM has to be priced against. RM_IHPSG13_2P_64x22
+  # gives 64 words for the price of 32, so the flop cost of 128 and 256 words is what says
+  # where the two curves cross (research/imem-sram/RESULT.md).
+  imem-ff-128x16:   {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 128, W: 16}}
+  imem-ff-256x16:   {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 256, W: 16}}
+  imem-ff-32x24:    {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 32, W: 24}}
+  imem-ff-32x32:    {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 32, W: 32}}
+  imem-ff-64x16:    {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 16}}
+  imem-ff-64x24:    {top: probe_imem_ff,    files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 24}}
+  imem-latch-32x24: {top: probe_imem_latch, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 32, W: 24}}
+  imem-latch-64x24: {top: probe_imem_latch, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 24}}
+  imem-latch-64x16: {top: probe_imem_latch, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 16}}
+  imem-srlatch-32x24: {top: probe_imem_srlatch, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 32, W: 24}}
+  imem-srlatch-64x24: {top: probe_imem_srlatch, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 24}}
+  imem-shared-ff-64x24x4:     {top: probe_imem_shared, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 24, NPORT: 4, LATCH: 0}}
+  imem-shared-latch-64x24x4:  {top: probe_imem_shared, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 24, NPORT: 4, LATCH: 1}}
+  imem-shared-latch-128x24x4: {top: probe_imem_shared, files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 128, W: 24, NPORT: 4, LATCH: 1}}
+  # --- per-SM datapath parts ---
+  fifo-4x32:   {top: probe_fifo,      files: *parts, params: {DEPTH: 4, W: 32}}
+  fifo-2x32:   {top: probe_fifo,      files: *parts, params: {DEPTH: 2, W: 32}}
+  fifo-4x16:   {top: probe_fifo,      files: *parts, params: {DEPTH: 4, W: 16}}
+  shift-32:    {top: probe_shiftregs, files: *parts, params: {W: 32}}
+  shift-16:    {top: probe_shiftregs, files: *parts, params: {W: 16}}
+  seqxy-32:    {top: probe_seq_xy,    files: *parts, params: {W: 32, DEPTH: 32}}
+  seqxy-16:    {top: probe_seq_xy,    files: *parts, params: {W: 16, DEPTH: 32}}
+  clkdiv:      {top: probe_clkdiv,    files: *parts, params: {}}
+  lfsr-32:     {top: probe_lfsr,      files: *parts, params: {W: 32}}
+  lfsr-16:     {top: probe_lfsr,      files: *parts, params: {W: 16}}
+  # --- plan sec. 7 probe 1: pin mapping, 20 protocol pins ---
+  pinmux-win-4sm:  {top: probe_pinmux_win,  files: [phys/probes/rtl/probe_pinmux.sv], params: {N_SM: 4, NP: 20, DW: 32}}
+  pinmux-win-3sm:  {top: probe_pinmux_win,  files: [phys/probes/rtl/probe_pinmux.sv], params: {N_SM: 3, NP: 20, DW: 32}}
+  pinmux-xbar-4sm: {top: probe_pinmux_xbar, files: [phys/probes/rtl/probe_pinmux.sv], params: {N_SM: 4, NP: 20, DW: 32}}
+  # --- transition-table storage for a table-driven executor ---
+  fc-table-latch-64x64:         {top: probe_imem_latch,   files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 64}}
+  fc-table-latch-shared-64x64x2: {top: probe_imem_shared,  files: [phys/probes/rtl/probe_imem.sv], params: {DEPTH: 64, W: 64, NPORT: 2, LATCH: 1}}
+  # --- validation blocks. Probe RTL only, not product RTL.
+  witness-24:   {top: probe_witness, files: [phys/probes/rtl/probe_witness.sv], params: {NP: 24, TW: 16, W: 32}}
+  witness-8:    {top: probe_witness, files: [phys/probes/rtl/probe_witness.sv], params: {NP: 8,  TW: 16, W: 32}}
+  clause-32x24: {top: probe_clause,  files: [phys/probes/rtl/probe_clause.sv],  params: {NP: 24, NCL: 32, TW: 16, RW: 32}}
+  clause-16x8:  {top: probe_clause,  files: [phys/probes/rtl/probe_clause.sv],  params: {NP: 8,  NCL: 16, TW: 16, RW: 32}}
+  # scaling of the same block, to price the one-clause-per-cycle evaluator that the
+  # SRAM clause table needs (the NCL=32 flop version is 389,562 um2, 43% of the core)
+  clause-8x24:  {top: probe_clause,  files: [phys/probes/rtl/probe_clause.sv],  params: {NP: 24, NCL: 8,  TW: 16, RW: 32}}
+  clause-4x24:  {top: probe_clause,  files: [phys/probes/rtl/probe_clause.sv],  params: {NP: 24, NCL: 4,  TW: 16, RW: 32}}
+  clause-1x24:  {top: probe_clause,  files: [phys/probes/rtl/probe_clause.sv],  params: {NP: 24, NCL: 1,  TW: 16, RW: 32}}
+  # --- calibration against LibreLane's own synthesis of the G0 stub ---
+  calib-stub: {top: tt_um_protocol_emulator, files: [src/tt_um_protocol_emulator.v, src/stub_uart_tx.v], params: {}}
+  # --- safety datapaths. Generic, no protocol named.
+  # NP = 18 = the protocol pins of the MVP map (docs/mvp.md). LW = lease width,
+  # TW = timestamp width.
+  padsafe-18:  {top: probe_pad_safety, files: [phys/probes/rtl/probe_pad_safety.sv], params: {NP: 18, LW: 12, TW: 20, LOGN: 4}}
+  padsafe-8:   {top: probe_pad_safety, files: [phys/probes/rtl/probe_pad_safety.sv], params: {NP: 8, LW: 12, TW: 20, LOGN: 4}}
+  padsafe-1:   {top: probe_pad_safety, files: [phys/probes/rtl/probe_pad_safety.sv], params: {NP: 1, LW: 12, TW: 20, LOGN: 4}}
+  pinshadow-18: {top: probe_pin_shadow, files: [phys/probes/rtl/probe_pin_shadow.sv], params: {NP: 18, D: 3, TW: 20, LOGN: 4}}
+  pinshadow-8:  {top: probe_pin_shadow, files: [phys/probes/rtl/probe_pin_shadow.sv], params: {NP: 8, D: 3, TW: 20, LOGN: 4}}
+  pinshadow-1:  {top: probe_pin_shadow, files: [phys/probes/rtl/probe_pin_shadow.sv], params: {NP: 1, D: 3, TW: 20, LOGN: 4}}
+  # --- the two always-on parts of the reduced C3 replay
+  #     module (research/ideation/round2/research/C3.md): the 32-bit per-cycle
+  #     signature and the pin shadow with its window buffer. NP=18 is the MVP pin
+  #     map, NP=24 the count the 40,777 um2 witness estimate uses. Results and
+  #     method: research/ideation/round2/experiments/V1-replay-module/.
+  replay-sig-18:     {top: probe_replay_sig,     files: *replayfiles, params: {NP: 18, W: 32}}
+  replay-sig-24:     {top: probe_replay_sig,     files: *replayfiles, params: {NP: 24, W: 32}}
+  replay-shadow-18:  {top: probe_replay_shadow,  files: *replayfiles, params: {NP: 18, D: 3, TW: 20, DEPTH: 512}}
+  replay-shadow-24:  {top: probe_replay_shadow,  files: *replayfiles, params: {NP: 24, D: 3, TW: 20, DEPTH: 512}}
+  # the pin shadow with the window buffer effectively switched off (DEPTH=2 is two
+  # entries), so the comparator is priced on its own: this is the quantity that
+  # pairs with replay-sig-* in the kill criterion
+  replay-shadow-18-nw: {top: probe_replay_shadow, files: *replayfiles, params: {NP: 18, D: 3, TW: 20, DEPTH: 2}}
+  replay-shadow-24-nw: {top: probe_replay_shadow, files: *replayfiles, params: {NP: 24, D: 3, TW: 20, DEPTH: 2}}
+  # the window buffer alone, at the two depths the byte figures in C3.md imply:
+  # a 512 B receipt (the pre-registered KILL (window) budget) and a 64-deep one
+  replay-window-512x18: {top: probe_replay_window, files: *replayfiles, params: {TW: 20, NP: 18, DEPTH: 512}}
+  replay-window-64x18:  {top: probe_replay_window, files: *replayfiles, params: {TW: 20, NP: 18, DEPTH: 64}}
+  replay-window-128x18: {top: probe_replay_window, files: *replayfiles, params: {TW: 20, NP: 18, DEPTH: 128}}
+  replay-window-256x18: {top: probe_replay_window, files: *replayfiles, params: {TW: 20, NP: 18, DEPTH: 256}}
+  replay-window-512x24: {top: probe_replay_window, files: *replayfiles, params: {TW: 20, NP: 24, DEPTH: 512}}
+  # the window buffer, second reading: a per-pin edge file (NP x TW flops)
+  replay-edgefile-18: {top: probe_replay_edgefile, files: *replayfiles, params: {NP: 18, D: 3, TW: 20}}
+  replay-edgefile-24: {top: probe_replay_edgefile, files: *replayfiles, params: {NP: 24, D: 3, TW: 20}}
+  # the sum the kill criterion is about: signature + pin shadow
+  replay-module-18: {top: probe_replay_module, files: *replayfiles, params: {NP: 18, D: 3, TW: 20, W: 32}}
+  replay-module-24: {top: probe_replay_module, files: *replayfiles, params: {NP: 24, D: 3, TW: 20, W: 32}}

@@ -1,0 +1,37 @@
+;
+; UART TX, 8N1, for words whose byte sits in bits 31:24 -- the format fw/uart_rx pushes.
+;
+; fw/uart_tx/program.pio expects the byte right-justified (bits 7:0).  An engine route copies
+; a RX FIFO word unchanged into the next engine's TX FIFO, and the UART receiver leaves the
+; byte at bits 31:24 (bits 23:0 are zero).  This is fw/uart_tx's program with one extra
+; instruction, `out null, 24`, that throws the 24 zero bits away before the 8 data bits go out.
+;
+; Differences from fw/uart_tx/program.pio, and what they cost:
+;   * AUTOPULL is OFF (SHIFTCTRL autopull = 0), the program refills with its own `pull block`.
+;     With autopull and PULL_THRESH 32 the refill after the 8th data bit would also work, but
+;     this form is simpler to reason about.
+;   * `pull block` + `out null, 24` are two extra SM cycles (and the `jmp start`) between the
+;     stop bit and the next start bit: a back-to-back frame is 3 SM cycles (3/8 of a bit) longer
+;     than the line frame.  Throughput is 10.375 bit times per byte instead of 10.
+; Host registers: as fw/uart_tx (SIDE_EN=1, SIDESET_COUNT=2, all windows on the TX pin), except
+; SHIFTCTRL = OUT_SHIFTDIR 1 (shift right), autopull 0.
+;
+.program uart_tx_hi
+.side_set 1 opt
+
+.define BIT_DELAY 7                ; a bit is 1 + 7 = 8 SM cycles
+
+PUBLIC start:
+        pull block               ; the word: byte at bits 31:24
+        out null, 24             ; drop the zero bits 23:0 (shift right), byte now at bits 7:0
+        set pindirs, 1 side 2 [BIT_DELAY]   ; TX pin an output, start bit low
+        out pins, 1        [BIT_DELAY]   ; data bit 0 (LSB first)
+        out pins, 1        [BIT_DELAY]
+        out pins, 1        [BIT_DELAY]
+        out pins, 1        [BIT_DELAY]
+        out pins, 1        [BIT_DELAY]
+        out pins, 1        [BIT_DELAY]
+        out pins, 1        [BIT_DELAY]
+        out pins, 1        [BIT_DELAY]   ; data bit 7
+        set pins, 1        [BIT_DELAY]   ; stop bit
+        jmp start

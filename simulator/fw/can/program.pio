@@ -1,0 +1,139 @@
+;
+; CAN transmitter bit engine for the MVP chip (task B3-FW-can).
+;
+; Five words. The whole program is one loop of three instructions: one bit time is
+; 3 + D_OUT + D_IN SM cycles, so with the defaults below it is 10 SM cycles per bit
+; and CLKDIV sets the bit rate: one bit = 10 * CLKDIV core cycles, i.e. CLKDIV 40
+; gives 400 core cycles per bit = 8 us = 125 kbit/s at the 50 MHz the ISS runs at,
+; and CLKDIV 10 gives 100 core cycles = 2 us = 500 kbit/s.  fw/can/driver.py derives
+; the divisor from the two `.define`s below and refuses a bit time that is not a
+; whole number of CLKDIV steps.
+;
+; The two delays are also the *granularity* of the bit rate: this program can only be
+; timed at bit times that are a whole number of 10 core cycles, so at CLKDIV 5 it puts
+; out 1 Mbit/s -- the top of the classic CAN range, `04-bosch-bit-timing.txt` sec. 1 --
+; which a 20-SM-cycle-per-bit loop would have missed, since 50 is not a multiple of 20.
+; `python -m fw.can.measure` sweeps the bit times and writes metrics/fw-can-speed.csv.
+;
+; D_OUT is 7 and D_IN 0 rather than the other way round because of what the read-back is
+; for: it has to see a *receiver* drive the ACK SLOT, and a receiver drives it from the
+; start of its bit time.  The placement is chosen for a real node's pad delay and its
+; arbitration margin: sec. 2 says a transmitter that loses "must withdraw without sending
+; one more bit", which on a real bus it cannot do while its own dominant bit is still
+; propagating onto the pad.  NOTHING IN THIS MODEL MEASURES THAT: verif/vip/core.py has
+; no propagation delay and no oscillator error, so every level reaches the net in the tick
+; it was returned for, and the whole suite passes with the sample one SM cycle earlier
+; (measured by mutating the sample point).  What pins the 7/0
+; split here is the encoded-word assertion in
+; test_the_program_fits_the_instruction_memory, not the bus.
+;
+; WHAT IS IN THE PIO AND WHAT IS NOT -- read this before reading the numbers above
+; -------------------------------------------------------------------------------
+; This program is the CAN *bit* layer: it puts one bit on one open-drain line per
+; bit time, at exactly the nominal bit time, and it reads the line back in the same
+; bit time so the host can see what actually reached the wire (Bosch CAN 2.0 Part A
+; sec. 6.1 "A BIT ERROR has to be detected by the transmitter ... monitoring the
+; bus" and the ACKNOWLEDGMENT check of the same section).
+;
+; The CAN *frame* layer -- the 15-bit CRC, the bit stuffing, the field order, the
+; retransmission on an error, the error counters and the receiver's ACK -- is host
+; software (fw/can/driver.py).  Two of those are budget judgements, not walls, and
+; CANNOT-EXPRESS.md gives the counted version:
+;
+;   * the CRC SEQUENCE needs `crc = (crc << 1) ^ (poly if feedback else 0)` with
+;     the generator X^15+X^14+X^10+X^8+X^7+X^4+X^3+1 (`01` sec. 3.1.1).  The MVP
+;     instruction set has no XOR: MOV offers a copy, an invert and a bit-reverse,
+;     and there is no second register to combine (docs/mvp-isa.md
+;     `### Field values`), and a 256-entry CRC table would need data memory the chip
+;     does not have -- IMEM is fetch-only and cannot be read by the program
+;     (docs/mvp-isa.md `### Engine state`).  So the arithmetic is not one instruction
+;     away; what excludes it is that no instruction can test a single bit of a
+;     register, so the 15 bits of feedback cost 30+ instructions per data bit against
+;     32 words of IMEM (CANNOT-EXPRESS.md 1).
+;   * bit stuffing needs the run length of the bits already sent and a conditional
+;     extra bit in the middle of the stream, and the receiver needs to *drop* a
+;     stuff bit before it can even find the ACK SLOT (its position on the wire
+;     depends on how many stuff bits came before it).  A CAN receiver therefore
+;     cannot ACK without destuffing.  The window itself is NOT the obstacle --
+;     `mov isr, osr` / `in null, 27` / `mov x, isr` / `jmp !x` tests any five-bit
+;     run against 0b00000 with no AND and no mask, and a whole receiver-side
+;     stuff-bit detector built on that fits in 20 of the 32 words and runs at
+;     1 Mbit/s (measured).  A transmitter
+;     is the harder half and is not built here: a complement bit has to reach the
+;     line through `out pindirs`, the only data-dependent open-drain write, which
+;     spends OSR bits, so the unsent bits have to be kept elsewhere and shifted
+;     back in.  fw/can/CANNOT-EXPRESS.md 2 has the argument, the counts and the
+;     citations.
+;
+; `fw/can/CANNOT-EXPRESS.md` has the full map with measurements, and the header of
+; fw/can/driver.py says exactly which part of a frame the host builds.
+;
+; Where the pin is
+; ---------------
+; One net, one pin, and it must be a uio pin: open drain is a direction, and only
+; the uio pins have one (docs/mvp-isa.md `### Open drain`).  The level register of
+; that pin is never written, so it stays at its reset value 0 and the program only
+; ever toggles the direction -- exactly what the RP2040 PIO does for an open-drain
+; bus: drive = dominant, release = recessive.  Bosch sec. 2 gives the wired-AND
+; rule that makes that work ("in case of a wired-AND implementation of the bus, the
+; 'dominant' level would be represented by a logical '0'").
+;
+;   OUT window, 1 pin, OUT_BASE = CAN_PIN, OUT_COUNT = 1
+;       `out pindirs, 1` writes the CAN line's *direction* from one OSR bit:
+;       1 pulls the line low (dominant), 0 releases it (recessive).  SHIFTCTRL has
+;       OUT_SHIFTDIR = 0, so the OSR leaves MSB first, which is the order the wire
+;       bits are in; the host pushes one 32-bit word per 32 wire bits.
+;   IN window, IN_BASE = CAN_PIN
+;       `in pins, 1` reads the line back into the ISR, MSB first
+;       (IN_SHIFTDIR = 0), and AUTOPUSH at 32 bits puts one word per 32 bits into
+;       the RX FIFO.  One TX word out, one RX word back, same order: the host
+;       compares them and gets both the bit-error check and the ACK SLOT for free.
+;   SET window, 1 pin, SET_BASE = CAN_PIN, SET_COUNT = 1
+;       `set pindirs, 0` releases the line.  That is the whole of the idle state:
+;       the program parks in `idle` with the bus recessive, which is BUS IDLE
+;       (`02` sec. 3.1.5), and the host jumps back into `engine` when the next frame
+;       is ready.  There is no IRQ in the MVP (docs/mvp-isa.md
+;       `## Differences from RP2040`), so the host sees progress in SMx_ADDR and in
+;       the FIFO levels, and enters the engine by forcing `jmp engine` through
+;       SMx_INSTR (docs/mvp-isa.md `### EXEC`).
+;
+; Why there is no `wait` and no side-set
+; --------------------------------------
+; `wait` would be the natural way to start a frame (the SOF is a recessive-to-
+; dominant edge), but the program cannot be left waiting there: with no IRQ and a
+; host that must also fill the TX FIFO *before* the first bit goes out, a program
+; parked in `wait` would be one FIFO word short.  So the frame is started by the
+; host, and the host is also what makes the SOF edge land on the bus's bit grid;
+; driver.py does that and the test checks it.
+; A side-set is not used either: the only thing to write is the direction of one
+; pin, and the OUT channel already does that from the OSR, which is the one thing a
+; side-set cannot do.
+;
+; One word in, one word out
+; -------------------------
+; AUTOPULL with PULL_THRESH = 32 makes the 32nd `out pindirs, 1` refill the OSR
+; *in the same SM cycle*, with no stall and therefore without disturbing the bit
+; time (docs/mvp-isa.md `## Differences from RP2040` item 15 and `### Instruction
+; semantics`, OUT: "In the same cycle, if the TX FIFO is non-empty, pop it into OSR
+; and set osr_cnt = 0").  That is why there is no explicit `pull` in the loop and
+; why a refill costs nothing.  It is also why the host has to keep the TX FIFO
+; non-empty: a refill with an empty FIFO stalls the `out` (FDEBUG.TXSTALL), and a
+; stall inside a frame is a stretched bit time, which the checker calls a bit-time
+; violation.  The driver keeps three words queued and asserts FDEBUG is clear.
+;
+.program can_tx
+.define D_OUT 7                  ; SM cycles before the sample, delay excluded
+.define D_IN 0                   ; SM cycles after the sample, delay excluded
+
+.wrap_target idle
+.wrap idle_end                  ; running off the end parks in `idle` again
+
+idle:                            ; BUS IDLE: the line is released (recessive)
+        set pindirs, 0
+idle_end:
+        jmp idle
+
+engine:                          ; forced into by the host; one iteration is one bit
+        out pindirs, 1 [D_OUT]   ; drive the bit from the OSR, MSB first
+        in pins, 1 [D_IN]        ; read the line back, 80 % into the bit time
+        jmp engine

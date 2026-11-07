@@ -1,0 +1,18 @@
+{
+  "//": "Does the TT CMOS5L flow accept a ui_in pin as a clock, and what is the internal port-to-port delay t_int through logic clocked by it? Run A: custom SDC with two create_clocks, CLOCK_PORT left at the default so CTS roots only clk. Lane clock is buffered by two explicit inverters in src/lane_probe.v, so this is the pessimistic case for the lane net.",
+  "//2": "Read the measurement out of runs/lane-probe/proj/runs/wokwi/*/reports: the ui_in[3] -> uo_out[3] path of the signoff STA (output delay is 0 against lane_clk, so slack = -t_int). Do not read flow.csv's WNS column, that is the design's worst path. The SDC is the one the TT FAQ publishes for this case, with LibreLane 3 env names; see src/lane.sdc for the diff.",
+  "kind": "tt",
+  "top": "tt_um_lane_probe",
+  "tiles": "6x4",
+  "sources": ["tt_um_lane_probe.v"],
+  "extra_src": ["lane.sdc"],
+  "clock_period": 20,
+  "tag": "lane-probe",
+  "librelane": {
+    "PNR_SDC_FILE": "dir::lane.sdc",
+    "SIGNOFF_SDC_FILE": "dir::lane.sdc",
+    "//MAX_FANOUT": "Two: the lane clock net is rooted at clk only, so without this the 150-flop lane clock pin would be the design's worst fanout and the buffer pair in the RTL would be fighting a resizer.",
+    "MAX_FANOUT_CONSTRAINT": 2
+  },
+  "//LANE_PERIOD": "MOVED: it never reached src/lane.sdc. LibreLane exports only its own declared variables into the SDC environment - the generated _env_*.tcl of this run lists 74 ::env(...) lines and LANE_PERIOD is not among them. Keeping the key here was a trap: it reads like the knob that sets the lane period and it sets nothing. The 30 ns = 33 MHz lane period (the pad output toggle limit) is now the literal `lane_period` in src/lane.sdc, and t_int does not depend on it: the report's data arrival time is the measurement, with output delay 0 against lane_clk."
+}

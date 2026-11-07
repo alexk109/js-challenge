@@ -1,0 +1,9 @@
+{
+  "//": "TT top level with the UART-TX stub, 6x4 tiles (the size the competition guarantees today).",
+  "kind": "tt",
+  "top": "tt_um_protocol_emulator",
+  "tiles": "6x4",
+  "sources": ["tt_um_protocol_emulator.v", "stub_uart_tx.v"],
+  "clock_period": 20,
+  "params": {"N_SM": 0}
+}

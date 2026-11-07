@@ -1,0 +1,257 @@
+protocol,metric,value,unit,target,knob,knob_value,source
+spi_host_port,write,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,read,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,read_rxf0_pop,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read_rxf0_pop: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,txf0_burst_4,1092,core cycles per transaction,iss,ticks_per_sck_bit,8,"txf0_burst_4: CSn low for 1092 core cycles (21840 ns), 136 SCK rises for 17 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,rxf0_burst_4,1604,core cycles per transaction,iss,ticks_per_sck_bit,8,"rxf0_burst_4: CSn low for 1604 core cycles (32080 ns), 200 SCK rises for 9 out / 16 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,cmd_only,68,core cycles per transaction,iss,ticks_per_sck_bit,8,"cmd_only: CSn low for 68 core cycles (1360 ns), 8 SCK rises for 1 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi,sweep_point,pass,core cycles per SM cycle,iss,clkdiv_int,1,fastest is down; the protocol checker passed with no violations
+spi,max_bit_rate,6.00601e+06,bit/s,iss,clkdiv_int,1,"160 bits / 1332 core cycles (measured over core cycles 35..1367 on nets p0,p1,p2,p3); clkdiv_int=1 core cycles per SM cycle"
+spi,sm_cycles_per_bit,8.33125,SM cycles/bit,iss,clkdiv_int,1,"1333 SM cycles / 160 bits (measured over core cycles 35..1367 on nets p0,p1,p2,p3); counted by counting Engine.sm_step"
+spi,fifo_headroom_at_max_rate,0,FIFO words free of 4,iss,clkdiv_int,1,"peak TX level 4, peak RX level 1 (measured over core cycles 35..1367 on nets p0,p1,p2,p3); FIFO_DEPTH=4"
+spi,regwrite_to_first_pin_edge,3,core cycles,iss,clkdiv_int,1,first edge on p0 minus the CTRL enable write's bus access cycle h
+spi,pin_event_to_response,8,core cycles,iss,clkdiv_int,1,pin: flash MISO edge in cycle 27 to the chip's next CS/SCK/MOSI edge
+spi,measured_program,spi_read_m0,see source,iss,clkdiv_int,1,also measured in this run (spi at clkdiv_int=1 core cycles per SM cycle)
+spi,measured_responds,pin,see source,iss,clkdiv_int,1,also measured in this run (spi at clkdiv_int=1 core cycles per SM cycle)
+spi,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+spi,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+i2c,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,4,"fastest is down; read=22334400 want=22334400; checker rules=['fSCL', 'tHIGH', 'tLOW', 'tSU;STO']; FDEBUG=0x00000000; bus errors=0"
+i2c,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,8,"fastest is down; read=22334400 want=22334400; checker rules=['fSCL', 'tHIGH', 'tLOW']; FDEBUG=0x00000000; bus errors=0"
+i2c,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,10,fastest is down; read=22334400 want=22334400; checker rules=['fSCL']; FDEBUG=0x00000000; bus errors=0
+i2c,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,11,fastest is down; read=22334400 want=22334400; checker rules=['fSCL']; FDEBUG=0x00000000; bus errors=0
+i2c,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,12,fastest is down; read=22334400 want=22334400; checker rules=['fSCL']; FDEBUG=0x00000000; bus errors=0
+i2c,sweep_point,pass,core cycles per SM cycle,iss,clkdiv_int,13,fastest is down; the protocol checker passed with no violations
+i2c,max_bit_rate,320999,bit/s,iss,clkdiv_int,13,"72 bits / 11215 core cycles (measured over core cycles 291..11506 on nets p1,p0); clkdiv_int=13 core cycles per SM cycle"
+i2c,sm_cycles_per_bit,12.0139,SM cycles/bit,iss,clkdiv_int,13,"865 SM cycles / 72 bits (measured over core cycles 291..11506 on nets p1,p0); counted by counting Engine.sm_step"
+i2c,fifo_headroom_at_max_rate,0,FIFO words free of 4,iss,clkdiv_int,13,"peak TX level 4, peak RX level 1 (measured over core cycles 291..11506 on nets p1,p0); FIFO_DEPTH=4"
+i2c,regwrite_to_first_pin_edge,42,core cycles,iss,clkdiv_int,13,first edge on p1 minus the CTRL enable write's bus access cycle h
+i2c,pin_event_to_response,78,core cycles,iss,clkdiv_int,13,pin: the EEPROM's ACK (SDA fall) in cycle 512 to the chip's next SCL rise
+i2c,measured_bytes_on_the_wire,8,see source,iss,clkdiv_int,13,also measured in this run (i2c at clkdiv_int=13 core cycles per SM cycle)
+i2c,measured_shortest_scl_period,130,see source,iss,clkdiv_int,13,also measured in this run (i2c at clkdiv_int=13 core cycles per SM cycle)
+i2c,measured_max_scl_hz,384615,see source,iss,clkdiv_int,13,also measured in this run (i2c at clkdiv_int=13 core cycles per SM cycle)
+i2c,measured_responds,pin,see source,iss,clkdiv_int,13,also measured in this run (i2c at clkdiv_int=13 core cycles per SM cycle)
+i2c,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+i2c,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+jtag,sweep_point,pass,core cycles per SM cycle,iss,clkdiv_int,1,fastest is down; the protocol checker passed with no violations
+jtag,max_bit_rate,3.83142e+06,bit/s,iss,clkdiv_int,1,"40 bits / 522 core cycles (measured over core cycles 243..765 on nets p0,p1,p2,p3); clkdiv_int=1 core cycles per SM cycle"
+jtag,sm_cycles_per_bit,13.075,SM cycles/bit,iss,clkdiv_int,1,"523 SM cycles / 40 bits (measured over core cycles 243..765 on nets p0,p1,p2,p3); counted by counting Engine.sm_step"
+jtag,fifo_headroom_at_max_rate,2,FIFO words free of 4,iss,clkdiv_int,1,"peak TX level 2, peak RX level 1 (measured over core cycles 243..765 on nets p0,p1,p2,p3); FIFO_DEPTH=4"
+jtag,regwrite_to_first_pin_edge,5,core cycles,iss,clkdiv_int,1,first edge on p0 minus the CTRL enable write's bus access cycle h
+jtag,pin_event_to_response,1,core cycles,iss,clkdiv_int,1,pin: the TAP's TDO fall in cycle 260 to the chip's next TCK/TMS/TDI edge
+jtag,measured_steady_tck_period,9,see source,iss,clkdiv_int,1,also measured in this run (jtag at clkdiv_int=1 core cycles per SM cycle)
+jtag,measured_responds,pin,see source,iss,clkdiv_int,1,also measured in this run (jtag at clkdiv_int=1 core cycles per SM cycle)
+jtag,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+jtag,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+swd,sweep_point,pass,core cycles per bit,iss,bit_period,9,fastest is down; the protocol checker passed with no violations
+swd,max_bit_rate,5.24523e+06,bit/s,iss,bit_period,9,"231 bits / 2202 core cycles (measured over core cycles 62..2264 on nets p13,p0,p14); bit_period=9 core cycles per bit"
+swd,sm_cycles_per_bit,9.51082,SM cycles/bit,iss,bit_period,9,"2197 SM cycles / 231 bits (measured over core cycles 62..2264 on nets p13,p0,p14); counted by counting Engine.sm_step"
+swd,fifo_headroom_at_max_rate,1,FIFO words free of 4,iss,bit_period,9,"peak TX level 3, peak RX level 2 (measured over core cycles 62..2264 on nets p13,p0,p14); FIFO_DEPTH=4"
+swd,regwrite_to_first_pin_edge,25,core cycles,iss,bit_period,9,first edge on p13 minus the CTRL enable write's bus access cycle h
+swd,pin_event_to_response,2,core cycles,iss,bit_period,9,pin: the DP's SWDIO fall in cycle 915 to the chip's next SWCLK edge
+swd,measured_high,6,see source,iss,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,measured_low,0,see source,iss,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,measured_frames,3,see source,iss,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,measured_swclk_hz,5.55556e+06,see source,iss,bit_period,9,"also measured in this run (swd at bit_period=9 core cycles per bit); FALLBACK, not a measurement: the driver refused (AttributeError: 'SwdDriver' object has no attribute 'swclk_hz'), so this is the formula 5.55556e+06"
+swd,measured_responds,pin,see source,iss,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+swd,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+ps2,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,60,"fastest is down; reset answer=aa want aa, scan=1c want 1c; rules=['tCLK-high', 'tCLK-low']; FDEBUG=0x00000000; bus errors=0"
+ps2,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,70,"fastest is down; reset answer=aa want aa, scan=1c want 1c; rules=['tCLK-high', 'tCLK-low']; FDEBUG=0x00000000; bus errors=0"
+ps2,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,80,"fastest is down; reset answer=aa want aa, scan=1c want 1c; rules=['tCLK-high', 'tCLK-low']; FDEBUG=0x00000000; bus errors=0"
+ps2,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,90,"fastest is down; reset answer=aa want aa, scan=1c want 1c; rules=['tCLK-high', 'tCLK-low']; FDEBUG=0x00000000; bus errors=0"
+ps2,sweep_point,pass,core cycles per SM cycle,iss,clkdiv_int,94,fastest is down; the protocol checker passed with no violations
+ps2,max_bit_rate,10390.6,bit/s,iss,clkdiv_int,94,"45 bits / 216542 core cycles (measured over core cycles 9524..226066 on nets p0,p1); clkdiv_int=94 core cycles per SM cycle"
+ps2,sm_cycles_per_bit,50.8,SM cycles/bit,iss,clkdiv_int,94,"2286 SM cycles / 45 bits (measured over core cycles 9524..226066 on nets p0,p1); counted by counting Engine.sm_step"
+ps2,fifo_headroom_at_max_rate,3,FIFO words free of 4,iss,clkdiv_int,94,"peak TX level 0, peak RX level 1 (measured over core cycles 9524..226066 on nets p0,p1); FIFO_DEPTH=4"
+ps2,regwrite_to_first_pin_edge,97,core cycles,iss,clkdiv_int,94,first edge on p0 minus the CTRL enable write's bus access cycle h
+ps2,pin_event_to_response,1253,core cycles,iss,clkdiv_int,94,pin: the keyboard's DATA fall in cycle 42299 to the chip's next CLK edge
+ps2,measured_clock_period_ticks,5000,see source,iss,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_frames_to_device,1,see source,iss,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_frames_to_host,3,see source,iss,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_line_rate_hz,16118.6,see source,iss,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_responds,pin,see source,iss,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+ps2,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+onewire,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,40,"fastest is down; scratchpad=ffffffffffffffffff want 91014b007fffff10c9; rules=['no-reset', 'tLOW0', 'tRSTL', 'tSLOT']; drove the line high on 0 ticks; bus errors=0"
+onewire,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,44,"fastest is down; scratchpad=d5baaabab5aaaa7fff want 91014b007fffff10c9; rules=['tLOW0', 'tSLOT']; drove the line high on 0 ticks; bus errors=0"
+onewire,sweep_point,fail,core cycles per SM cycle,iss,clkdiv_int,46,fastest is down; scratchpad=91014b007fffff10c9 want 91014b007fffff10c9; rules=['tLOW0']; drove the line high on 0 ticks; bus errors=0
+onewire,sweep_point,pass,core cycles per SM cycle,iss,clkdiv_int,47,fastest is down; the protocol checker passed with no violations
+onewire,max_bit_rate,13004.1,bit/s,iss,clkdiv_int,47,88 bits / 338354 core cycles (measured over core cycles 27341..365695 on nets p0); clkdiv_int=47 core cycles per SM cycle
+onewire,sm_cycles_per_bit,81.4205,SM cycles/bit,iss,clkdiv_int,47,7165 SM cycles / 88 bits (measured over core cycles 27341..365695 on nets p0); counted by counting Engine.sm_step
+onewire,fifo_headroom_at_max_rate,3,FIFO words free of 4,iss,clkdiv_int,47,"peak TX level 1, peak RX level 1 (measured over core cycles 27341..365695 on nets p0); FIFO_DEPTH=4"
+onewire,regwrite_to_first_pin_edge,97,core cycles,iss,clkdiv_int,47,first edge on p0 minus the CTRL enable write's bus access cycle h
+onewire,pin_event_to_response,3055,core cycles,iss,clkdiv_int,47,pin: the slave's DQ pull-low in cycle 55356 to the chip's next DQ edge
+onewire,measured_slot_period_ticks,2724,see source,iss,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_write_slots,16,see source,iss,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_read_slots,72,see source,iss,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_presence_pulses,1,see source,iss,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_responds,pin,see source,iss,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+onewire,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+dmx512,sweep_point,fail,bit/s,iss,bit_rate,260000,fastest is up; the driver refused this rate: 260.00 kbit/s is outside the 245 .. 255 kbit/s both tables allow
+dmx512,sweep_point,pass,bit/s,iss,bit_rate,255000,fastest is up; the protocol checker passed with no violations
+dmx512,max_bit_rate,255102,bit/s,iss,bit_rate,255000,800 bits / 156800 core cycles (measured over core cycles 69698..226498 on nets p0); bit_rate=255000 bit/s
+dmx512,sm_cycles_per_bit,10.4688,SM cycles/bit,iss,bit_rate,255000,8375 SM cycles / 800 bits (measured over core cycles 69698..226498 on nets p0); counted by counting Engine.sm_step
+dmx512,fifo_headroom_at_max_rate,0,FIFO words free of 4,iss,bit_rate,255000,"peak TX level 4, peak RX level 0 (measured over core cycles 69698..226498 on nets p0); FIFO_DEPTH=4"
+dmx512,regwrite_to_first_pin_edge,31,core cycles,iss,bit_rate,255000,first edge on p0 minus the CTRL enable write's bus access cycle h
+dmx512,pin_event_to_response,n/a,core cycles,iss,bit_rate,255000,nothing on the wire causes this firmware to answer
+dmx512,measured_slot_ticks,196,see source,iss,bit_rate,255000,also measured in this run (dmx512 at bit_rate=255000 bit/s)
+dmx512,measured_packets,2,see source,iss,bit_rate,255000,also measured in this run (dmx512 at bit_rate=255000 bit/s)
+dmx512,measured_checker_bit_ticks,196,see source,iss,bit_rate,255000,also measured in this run (dmx512 at bit_rate=255000 bit/s)
+dmx512,measured_checker_bit_rate_hz,255102,see source,iss,bit_rate,255000,also measured in this run (dmx512 at bit_rate=255000 bit/s)
+dmx512,measured_sm_cycles_per_slot,28,see source,iss,bit_rate,255000,also measured in this run (dmx512 at bit_rate=255000 bit/s)
+dmx512,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+dmx512,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+wiegand,sweep_point,pass,ns,iss,pulse_width,20000,fastest is down; the protocol checker passed with no violations
+wiegand,max_bit_rate,4166.67,bit/s,iss,pulse_width,20000,"26 bits / 312000 core cycles (measured over core cycles 3023..315023 on nets p0,p1); pulse_width=20000 ns"
+wiegand,sm_cycles_per_bit,12,SM cycles/bit,iss,pulse_width,20000,"312 SM cycles / 26 bits (measured over core cycles 3023..315023 on nets p0,p1); counted by counting Engine.sm_step"
+wiegand,fifo_headroom_at_max_rate,3,FIFO words free of 4,iss,pulse_width,20000,"peak TX level 1, peak RX level 0 (measured over core cycles 3023..315023 on nets p0,p1); FIFO_DEPTH=4"
+wiegand,regwrite_to_first_pin_edge,4003,core cycles,iss,pulse_width,20000,first edge on p0 minus the CTRL enable write's bus access cycle h
+wiegand,pin_event_to_response,1000,core cycles,iss,pulse_width,20000,pin: the reader's D0 request pulse in cycle 15023 to the card's first data edge
+wiegand,measured_pulse_period_ticks,12000,see source,iss,pulse_width,20000,also measured in this run (wiegand at pulse_width=20000 ns)
+wiegand,measured_pulse_width_ticks,1000,see source,iss,pulse_width,20000,also measured in this run (wiegand at pulse_width=20000 ns)
+wiegand,measured_frame_bits,26,see source,iss,pulse_width,20000,also measured in this run (wiegand at pulse_width=20000 ns)
+wiegand,measured_responds,pin,see source,iss,pulse_width,20000,also measured in this run (wiegand at pulse_width=20000 ns)
+wiegand,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+wiegand,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+quadrature,sweep_point,fail,revolutions/min,iss,rpm,896000,fastest is up; ran=True chip=-4 model=4 encoder=4 counts=8; decoder errors=0; violations=9; FDEBUG=0x00000000
+quadrature,sweep_point,fail,revolutions/min,iss,rpm,448000,fastest is up; ran=True chip=-4 model=4 encoder=4 counts=8; decoder errors=2; violations=9; FDEBUG=0x00000000
+quadrature,sweep_point,fail,revolutions/min,iss,rpm,224000,fastest is up; ran=True chip=0 model=4 encoder=4 counts=8; decoder errors=2; violations=9; FDEBUG=0x00000000
+quadrature,sweep_point,pass,revolutions/min,iss,rpm,112000,fastest is up; the protocol checker passed with no violations
+quadrature,max_bit_rate,3.26531e+07,bit/s,iss,rpm,112000,"32 bits / 49 core cycles (measured over core cycles 25..74 on nets p0,p1,p2); rpm=112000 revolutions/min"
+quadrature,sm_cycles_per_bit,1.5625,SM cycles/bit,iss,rpm,112000,"50 SM cycles / 32 bits (measured over core cycles 25..74 on nets p0,p1,p2); counted by counting Engine.sm_step"
+quadrature,fifo_headroom_at_max_rate,4,FIFO words free of 4,iss,rpm,112000,"peak TX level 0, peak RX level 0 (measured over core cycles 25..74 on nets p0,p1,p2); FIFO_DEPTH=4"
+quadrature,regwrite_to_first_pin_edge,n/a,core cycles,iss,rpm,112000,this firmware drives no protocol pin in this transaction
+quadrature,pin_event_to_response,351,core cycles,iss,rpm,112000,fifo: the first A/B edge in cycle 25 to the first RX FIFO push
+quadrature,measured_counts,8,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_ticks_per_count,6.69643,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_chip_position,4,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_model_position,4,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_encoder_position,4,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_clkdiv,65536,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_min_step_ticks,2,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_ticks_per_sample,5,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_violations,9,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_profile_max_rpm,28000,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,measured_responds,fifo,see source,iss,rpm,112000,also measured in this run (quadrature at rpm=112000 revolutions/min)
+quadrature,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+quadrature,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+necir,sweep_point,fail,SM cycles per half bit,iss,sm_cycles_per_unit,6,"fastest is down; the driver refused this sampling grid (7..12 are legal): S = 6 is outside 7..12: below that the data-space sample's window is empty, above it a pad delay does not fit the 5-bit delay field (program.pi"
+necir,sweep_point,pass,SM cycles per half bit,iss,sm_cycles_per_unit,7,fastest is down; the protocol checker passed with no violations
+necir,max_bit_rate,1031.87,bit/s,iss,sm_cycles_per_unit,7,68 bits / 3295 core cycles (measured over core cycles 55..3350 on nets p0); sm_cycles_per_unit=7 SM cycles per half bit; bench time base compressed 1000x
+necir,sm_cycles_per_bit,12.0588,SM cycles/bit,iss,sm_cycles_per_unit,7,820 SM cycles / 68 bits (measured over core cycles 55..3350 on nets p0); counted by counting Engine.sm_step
+necir,fifo_headroom_at_max_rate,3,FIFO words free of 4,iss,sm_cycles_per_unit,7,"peak TX level 0, peak RX level 1 (measured over core cycles 55..3350 on nets p0); FIFO_DEPTH=4"
+necir,regwrite_to_first_pin_edge,n/a,core cycles,iss,sm_cycles_per_unit,7,this firmware drives no protocol pin in this transaction
+necir,pin_event_to_response,3295,core cycles,iss,sm_cycles_per_unit,7,fifo: the first IR edge in cycle 55 to the first RX FIFO push
+necir,measured_unit_ns_bench,562.5,see source,iss,sm_cycles_per_unit,7,also measured in this run (necir at sm_cycles_per_unit=7 SM cycles per half bit)
+necir,measured_unit_ns_real,562500,see source,iss,sm_cycles_per_unit,7,also measured in this run (necir at sm_cycles_per_unit=7 SM cycles per half bit)
+necir,measured_tolerance,0.25,see source,iss,sm_cycles_per_unit,7,also measured in this run (necir at sm_cycles_per_unit=7 SM cycles per half bit)
+necir,measured_violations,0,see source,iss,sm_cycles_per_unit,7,also measured in this run (necir at sm_cycles_per_unit=7 SM cycles per half bit)
+necir,measured_responds,fifo,see source,iss,sm_cycles_per_unit,7,also measured in this run (necir at sm_cycles_per_unit=7 SM cycles per half bit)
+necir,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+necir,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+uart_tx,sweep_point,pass,bit/s,iss,baud,6.25e+06,fastest is up; the protocol checker passed with no violations
+uart_tx,max_bit_rate,6.10687e+06,bit/s,iss,baud,6.25e+06,80 bits / 655 core cycles (measured over core cycles 42..697 on nets p0); baud=6.25e+06 bit/s
+uart_tx,sm_cycles_per_bit,8.2,SM cycles/bit,iss,baud,6.25e+06,656 SM cycles / 80 bits (measured over core cycles 42..697 on nets p0); counted by counting Engine.sm_step
+uart_tx,fifo_headroom_at_max_rate,0,FIFO words free of 4,iss,baud,6.25e+06,"peak TX level 4, peak RX level 0 (measured over core cycles 42..697 on nets p0); FIFO_DEPTH=4"
+uart_tx,regwrite_to_first_pin_edge,4,core cycles,iss,baud,6.25e+06,first edge on p0 minus the CTRL enable write's bus access cycle h
+uart_tx,pin_event_to_response,n/a,core cycles,iss,baud,6.25e+06,nothing on the wire causes this firmware to answer
+uart_tx,measured_achieved_baud,6.25e+06,see source,iss,baud,6.25e+06,also measured in this run (uart_tx at baud=6.25e+06 bit/s)
+uart_tx,measured_requested_baud,6.25e+06,see source,iss,baud,6.25e+06,also measured in this run (uart_tx at baud=6.25e+06 bit/s)
+uart_tx,measured_frame_period_ticks,82,see source,iss,baud,6.25e+06,also measured in this run (uart_tx at baud=6.25e+06 bit/s)
+uart_tx,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+uart_tx,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+uart_rx,sweep_point,fail,bit/s,iss,baud,1.25e+07,"fastest is up; rx=[0, 85, 237, 64, 127, 255] want=[0, 85, 170, 255, 1, 128, 127, 254]; framing 2; FDEBUG=0x00000000; bus errors 0"
+uart_rx,sweep_point,pass,bit/s,iss,baud,8.33333e+06,fastest is up; the protocol checker passed with no violations
+uart_rx,max_bit_rate,8.33333e+06,bit/s,iss,baud,8.33333e+06,80 bits / 480 core cycles (measured over core cycles 33..513 on nets p0); baud=8.33333e+06 bit/s
+uart_rx,sm_cycles_per_bit,5.6625,SM cycles/bit,iss,baud,8.33333e+06,453 SM cycles / 80 bits (measured over core cycles 33..513 on nets p0); counted by counting Engine.sm_step
+uart_rx,fifo_headroom_at_max_rate,3,FIFO words free of 4,iss,baud,8.33333e+06,"peak TX level 0, peak RX level 1 (measured over core cycles 33..513 on nets p0); FIFO_DEPTH=4"
+uart_rx,regwrite_to_first_pin_edge,n/a,core cycles,iss,baud,8.33333e+06,this firmware drives no protocol pin in this transaction
+uart_rx,pin_event_to_response,27,core cycles,iss,baud,8.33333e+06,fifo: RXD start-bit edge in cycle 33 to the first RX FIFO push
+uart_rx,measured_sm_cycles_per_bit,6,see source,iss,baud,8.33333e+06,also measured in this run (uart_rx at baud=8.33333e+06 bit/s)
+uart_rx,measured_frame_period_ticks,60,see source,iss,baud,8.33333e+06,also measured in this run (uart_rx at baud=8.33333e+06 bit/s)
+uart_rx,measured_requested_baud,8.33333e+06,see source,iss,baud,8.33333e+06,also measured in this run (uart_rx at baud=8.33333e+06 bit/s)
+uart_rx,measured_responds,fifo,see source,iss,baud,8.33333e+06,also measured in this run (uart_rx at baud=8.33333e+06 bit/s)
+uart_rx,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+uart_rx,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+manchester,sweep_point,fail,bit/s,iss,bit_rate,1.25e+07,"fastest is up; the driver or the judge refused this rate: at 20.0 ns/tick a 1.25e+07 bit/s bit period is 4.00 ticks, which leaves no room between the half-bit window [1.00, 3.00] and the bit window [3.00, 5.00]: a t"
+manchester,sweep_point,pass,bit/s,iss,bit_rate,1.2e+07,fastest is up; the protocol checker passed with no violations
+manchester,max_bit_rate,8.06452e+06,bit/s,iss,bit_rate,1.2e+07,60 bits / 372 core cycles (measured over core cycles 45..417 on nets p0); bit_rate=1.2e+07 bit/s
+manchester,sm_cycles_per_bit,5.96667,SM cycles/bit,iss,bit_rate,1.2e+07,358 SM cycles / 60 bits (measured over core cycles 45..417 on nets p0); counted by counting Engine.sm_step
+manchester,fifo_headroom_at_max_rate,0,FIFO words free of 4,iss,bit_rate,1.2e+07,"peak TX level 4, peak RX level 0 (measured over core cycles 45..417 on nets p0); FIFO_DEPTH=4"
+manchester,regwrite_to_first_pin_edge,6,core cycles,iss,bit_rate,1.2e+07,first edge on p0 minus the CTRL enable write's bus access cycle h
+manchester,pin_event_to_response,n/a,core cycles,iss,bit_rate,1.2e+07,nothing on the wire causes this firmware to answer
+manchester,measured_half_bit_ticks,1,see source,iss,bit_rate,1.2e+07,also measured in this run (manchester at bit_rate=1.2e+07 bit/s)
+manchester,measured_clkdiv,68352,see source,iss,bit_rate,1.2e+07,also measured in this run (manchester at bit_rate=1.2e+07 bit/s)
+manchester,measured_program,manchester_even,see source,iss,bit_rate,1.2e+07,also measured in this run (manchester at bit_rate=1.2e+07 bit/s)
+manchester,measured_preamble_bits,2,see source,iss,bit_rate,1.2e+07,also measured in this run (manchester at bit_rate=1.2e+07 bit/s)
+manchester,measured_streams,6,see source,iss,bit_rate,1.2e+07,also measured in this run (manchester at bit_rate=1.2e+07 bit/s)
+manchester,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+manchester,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+ws2812,sweep_point,pass,"0 = ws2812, 1 = ws2812_fast",iss,program,1,fastest is up; the protocol checker passed with no violations
+ws2812,max_bit_rate,1.25e+06,bit/s,iss,program,1,"24 bits / 960 core cycles (measured over core cycles 36..996 on nets p0); program=1 0 = ws2812, 1 = ws2812_fast"
+ws2812,sm_cycles_per_bit,40.0417,SM cycles/bit,iss,program,1,961 SM cycles / 24 bits (measured over core cycles 36..996 on nets p0); counted by counting Engine.sm_step
+ws2812,fifo_headroom_at_max_rate,4,FIFO words free of 4,iss,program,1,"peak TX level 0, peak RX level 0 (measured over core cycles 36..996 on nets p0); FIFO_DEPTH=4"
+ws2812,regwrite_to_first_pin_edge,8,core cycles,iss,program,1,first edge on p0 minus the CTRL enable write's bus access cycle h
+ws2812,pin_event_to_response,n/a,core cycles,iss,program,1,nothing on the wire causes this firmware to answer
+ws2812,measured_program,ws2812_fast,see source,iss,program,1,"also measured in this run (ws2812 at program=1 0 = ws2812, 1 = ws2812_fast)"
+ws2812,measured_bit_period_ticks,40,see source,iss,program,1,"also measured in this run (ws2812 at program=1 0 = ws2812, 1 = ws2812_fast)"
+ws2812,measured_sm_cycles_bounds,40,see source,iss,program,1,"also measured in this run (ws2812 at program=1 0 = ws2812, 1 = ws2812_fast)"
+ws2812,measured_bit_rate_hz,1.25e+06,see source,iss,program,1,"also measured in this run (ws2812 at program=1 0 = ws2812, 1 = ws2812_fast)"
+ws2812,host_port_write_cycles,324,core cycles per transaction,iss,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+ws2812,host_port_read_cycles,644,core cycles per transaction,iss,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+spi_host_port,write,324,core cycles per transaction,rtl,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,read,644,core cycles per transaction,rtl,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,read_rxf0_pop,644,core cycles per transaction,rtl,ticks_per_sck_bit,8,"read_rxf0_pop: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,txf0_burst_4,1092,core cycles per transaction,rtl,ticks_per_sck_bit,8,"txf0_burst_4: CSn low for 1092 core cycles (21840 ns), 136 SCK rises for 17 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,rxf0_burst_4,1604,core cycles per transaction,rtl,ticks_per_sck_bit,8,"rxf0_burst_4: CSn low for 1604 core cycles (32080 ns), 200 SCK rises for 9 out / 16 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi_host_port,cmd_only,68,core cycles per transaction,rtl,ticks_per_sck_bit,8,"cmd_only: CSn low for 68 core cycles (1360 ns), 8 SCK rises for 1 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; framing check passes"
+spi,sweep_point,pass,core cycles per SM cycle,rtl,clkdiv_int,1,fastest is down; the protocol checker passed with no violations
+spi,max_bit_rate,6.00601e+06,bit/s,rtl,clkdiv_int,1,"160 bits / 1332 core cycles (measured over core cycles 35..1367 on nets p0,p1,p2,p3); clkdiv_int=1 core cycles per SM cycle"
+spi,sm_cycles_per_bit,n/a,SM cycles/bit,rtl,clkdiv_int,1,"not measured on this target, and not 0: unavailable: _RtlEngine exposes no `sm_cycle` (AttributeError: iss.pio_iss.Engine has no attribute 'sm_cycle' either; this harness reads only the state, the SM registers, the IMEM and the FIFOs, and a test that needs more of the ISS's internals has to say so); this metric is ISS-only"
+spi,fifo_headroom_at_max_rate,0,FIFO words free of 4,rtl,clkdiv_int,1,"peak TX level 4, peak RX level 1 (measured over core cycles 35..1367 on nets p0,p1,p2,p3); FIFO_DEPTH=4"
+spi,regwrite_to_first_pin_edge,3,core cycles,rtl,clkdiv_int,1,first edge on p0 minus the CTRL enable write's bus access cycle h
+spi,pin_event_to_response,8,core cycles,rtl,clkdiv_int,1,pin: flash MISO edge in cycle 27 to the chip's next CS/SCK/MOSI edge
+spi,measured_program,spi_read_m0,see source,rtl,clkdiv_int,1,also measured in this run (spi at clkdiv_int=1 core cycles per SM cycle)
+spi,measured_responds,pin,see source,rtl,clkdiv_int,1,also measured in this run (spi at clkdiv_int=1 core cycles per SM cycle)
+spi,host_port_write_cycles,324,core cycles per transaction,rtl,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+spi,host_port_read_cycles,644,core cycles per transaction,rtl,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+ps2,sweep_point,pass,core cycles per SM cycle,rtl,clkdiv_int,94,fastest is down; the protocol checker passed with no violations
+ps2,max_bit_rate,10390.6,bit/s,rtl,clkdiv_int,94,"45 bits / 216542 core cycles (measured over core cycles 9524..226066 on nets p0,p1); clkdiv_int=94 core cycles per SM cycle"
+ps2,sm_cycles_per_bit,n/a,SM cycles/bit,rtl,clkdiv_int,94,"not measured on this target, and not 0: unavailable: _RtlEngine exposes no `sm_cycle` (AttributeError: iss.pio_iss.Engine has no attribute 'sm_cycle' either; this harness reads only the state, the SM registers, the IMEM and the FIFOs, and a test that needs more of the ISS's internals has to say so); this metric is ISS-only"
+ps2,fifo_headroom_at_max_rate,3,FIFO words free of 4,rtl,clkdiv_int,94,"peak TX level 0, peak RX level 1 (measured over core cycles 9524..226066 on nets p0,p1); FIFO_DEPTH=4"
+ps2,regwrite_to_first_pin_edge,97,core cycles,rtl,clkdiv_int,94,first edge on p0 minus the CTRL enable write's bus access cycle h
+ps2,pin_event_to_response,1253,core cycles,rtl,clkdiv_int,94,pin: the keyboard's DATA fall in cycle 42299 to the chip's next CLK edge
+ps2,measured_clock_period_ticks,5000,see source,rtl,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_frames_to_device,1,see source,rtl,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_frames_to_host,3,see source,rtl,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_line_rate_hz,16118.6,see source,rtl,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,measured_responds,pin,see source,rtl,clkdiv_int,94,also measured in this run (ps2 at clkdiv_int=94 core cycles per SM cycle)
+ps2,host_port_write_cycles,324,core cycles per transaction,rtl,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+ps2,host_port_read_cycles,644,core cycles per transaction,rtl,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+swd,sweep_point,pass,core cycles per bit,rtl,bit_period,9,fastest is down; the protocol checker passed with no violations
+swd,max_bit_rate,5.24523e+06,bit/s,rtl,bit_period,9,"231 bits / 2202 core cycles (measured over core cycles 62..2264 on nets p13,p0,p14); bit_period=9 core cycles per bit"
+swd,sm_cycles_per_bit,n/a,SM cycles/bit,rtl,bit_period,9,"not measured on this target, and not 0: unavailable: _RtlEngine exposes no `sm_cycle` (AttributeError: iss.pio_iss.Engine has no attribute 'sm_cycle' either; this harness reads only the state, the SM registers, the IMEM and the FIFOs, and a test that needs more of the ISS's internals has to say so); this metric is ISS-only"
+swd,fifo_headroom_at_max_rate,1,FIFO words free of 4,rtl,bit_period,9,"peak TX level 3, peak RX level 2 (measured over core cycles 62..2264 on nets p13,p0,p14); FIFO_DEPTH=4"
+swd,regwrite_to_first_pin_edge,25,core cycles,rtl,bit_period,9,first edge on p13 minus the CTRL enable write's bus access cycle h
+swd,pin_event_to_response,2,core cycles,rtl,bit_period,9,pin: the DP's SWDIO fall in cycle 915 to the chip's next SWCLK edge
+swd,measured_high,6,see source,rtl,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,measured_low,0,see source,rtl,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,measured_frames,3,see source,rtl,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,measured_swclk_hz,5.55556e+06,see source,rtl,bit_period,9,"also measured in this run (swd at bit_period=9 core cycles per bit); FALLBACK, not a measurement: the driver refused (AttributeError: 'SwdDriver' object has no attribute 'swclk_hz'), so this is the formula 5.55556e+06"
+swd,measured_responds,pin,see source,rtl,bit_period,9,also measured in this run (swd at bit_period=9 core cycles per bit)
+swd,host_port_write_cycles,324,core cycles per transaction,rtl,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+swd,host_port_read_cycles,644,core cycles per transaction,rtl,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+onewire,sweep_point,pass,core cycles per SM cycle,rtl,clkdiv_int,47,fastest is down; the protocol checker passed with no violations
+onewire,max_bit_rate,13004.1,bit/s,rtl,clkdiv_int,47,88 bits / 338354 core cycles (measured over core cycles 27341..365695 on nets p0); clkdiv_int=47 core cycles per SM cycle
+onewire,sm_cycles_per_bit,n/a,SM cycles/bit,rtl,clkdiv_int,47,"not measured on this target, and not 0: unavailable: _RtlEngine exposes no `sm_cycle` (AttributeError: iss.pio_iss.Engine has no attribute 'sm_cycle' either; this harness reads only the state, the SM registers, the IMEM and the FIFOs, and a test that needs more of the ISS's internals has to say so); this metric is ISS-only"
+onewire,fifo_headroom_at_max_rate,3,FIFO words free of 4,rtl,clkdiv_int,47,"peak TX level 1, peak RX level 1 (measured over core cycles 27341..365695 on nets p0); FIFO_DEPTH=4"
+onewire,regwrite_to_first_pin_edge,97,core cycles,rtl,clkdiv_int,47,first edge on p0 minus the CTRL enable write's bus access cycle h
+onewire,pin_event_to_response,3055,core cycles,rtl,clkdiv_int,47,pin: the slave's DQ pull-low in cycle 55356 to the chip's next DQ edge
+onewire,measured_slot_period_ticks,2724,see source,rtl,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_write_slots,16,see source,rtl,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_read_slots,72,see source,rtl,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_presence_pulses,1,see source,rtl,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,measured_responds,pin,see source,rtl,clkdiv_int,47,also measured in this run (onewire at clkdiv_int=47 core cycles per SM cycle)
+onewire,host_port_write_cycles,324,core cycles per transaction,rtl,ticks_per_sck_bit,8,"write: CSn low for 324 core cycles (6480 ns), 40 SCK rises for 5 out / 0 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"
+onewire,host_port_read_cycles,644,core cycles per transaction,rtl,ticks_per_sck_bit,8,"read: CSn low for 644 core cycles (12880 ns), 80 SCK rises for 6 out / 4 in bytes at 8 ticks per bit; CSn setup 6, hold 6, shortest SCK low 4 and high 4 cycles; the SPI host port is one thing, so this is the spi_host_port row, not a per-protocol one"

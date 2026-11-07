@@ -1,0 +1,26 @@
+{
+  "//": "A/B floor: probe-imem-ff-32x24 with 0.05 ns uncertainty and zero resizer hold margins; DRC/LVS skipped.",
+  "kind": "block",
+  "top": "probe_imem_ff",
+  "sources": [
+    "phys/probes/rtl/probe_imem.sv"
+  ],
+  "params": {
+    "IMEM_DEPTH": 32
+  },
+  "core_util": 60,
+  "clock_period": 20,
+  "tag": "early-probe-hold-floor",
+  "librelane": {
+    "USE_SLANG": true,
+    "SYNTH_PARAMETERS": [
+      "DEPTH=32",
+      "W=24"
+    ],
+    "CLOCK_UNCERTAINTY_CONSTRAINT": 0.05,
+    "RUN_MAGIC_DRC": false,
+    "RUN_LVS": false,
+    "PL_RESIZER_HOLD_SLACK_MARGIN": 0.0,
+    "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.0
+  }
+}

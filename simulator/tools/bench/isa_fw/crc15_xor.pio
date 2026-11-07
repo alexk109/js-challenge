@@ -1,0 +1,44 @@
+;
+; CAN CRC-15 checker/generator with the isa_xor extension (MOV Op 11, `xor DST, SRC`).
+; Assemble with isa=("xor",): `assemble(text, ("xor",))`.  Not a MVP program: the MVP has no XOR.
+;
+; The receiver half of CAN's CRC: one pass over the DESTUFFED bits SOF..CRC SEQUENCE, then the register holds 0
+; for a good frame (Bosch sec. 3.1.1: running the register over the CRC SEQUENCE too leaves 0), or, stopped
+; after the DATA FIELD, the CRC to transmit.  The destuffer is NOT here (the 20-word detector was counted
+; by hand and has no program in the repo); this program is given the
+; destuffed stream, with a "frame over" signal on a second pin (a real receiver derives it from the DLC).
+;
+; Registers:  OSR = the CRC, left-justified (bit 31 = CRC(14)); Y = the generator 0x4599 left-justified;
+;             X = scratch (the feedback bit); ISR = scratch (the line bit).
+; Pins:       IN_BASE = the data pin (CAN line, destuffed);  EXECCTRL.JMP_PIN = the frame-over pin.
+; SHIFTCTRL:  all zero (shift left, no autopush / autopull).
+;
+; One bit = 7 SM cycles on both paths (taken or not taken), so CLKDIV * (7 + PAD) core cycles per bit:
+;     jmp pin / mov isr / in pins / out x / xor x,isr / jmp !x / [xor osr,y | jmp bit]
+; `PAD` stretches the loop to a bit time that is not a multiple of 7 (1 Mbit/s = 50 core cycles: CLKDIV 5, PAD 3).
+; The line is sampled at SM cycle 2 of the loop (`in pins`).
+;
+; Host protocol: push the generator word (0x4599 << 17), enable at the frame's SOF, read one RX word (CRC << 17).
+;
+.program crc15_xor
+.define PAD 0
+pull block                      ; the generator word, left-justified
+mov y, osr
+mov osr, null                   ; CRC = 0
+.wrap_target bit
+.wrap fb
+bit:
+    jmp pin, done [PAD]         ; frame over?
+    mov isr, null               ; clear the scratch so that `in` leaves exactly the line bit
+    in pins, 1                  ; ISR = the line bit
+    out x, 1                    ; X = CRC(14); the OUT also shifts the register left by one
+    xor x, isr                  ; X = CRCNXT = line bit ^ CRC(14)
+    jmp !x, skip                ; no feedback
+fb: xor osr, y                  ; CRC ^= generator (wrap top: back to `bit`)
+skip:
+    jmp bit                     ; keeps both paths at the same length
+done:
+    mov isr, osr
+    push block                  ; the CRC, left-justified
+park:
+    jmp park

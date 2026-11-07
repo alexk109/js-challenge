@@ -1,0 +1,16 @@
+{
+  "//": "MVP slow-corner closure, attempt 7. Same sources, tiles and 20 ns as phys/cfg/mvp.json (typ +1.408 ns, slow nom_slow_1p08V_125C -9.895 ns). Diagnosis from runs/mvp: the resizer already loads all three STA corners (RSZ_CORNERS falls back to STA_CORNERS; TIMING_VIOLATION_CORNERS only drives the final checker, so adding *slow* there would fail the run, not repair it). Post-CTS repair_timing saw 'No setup violations found' because it uses placement-estimated parasitics: mid-PnR typ slack was +6.04 ns against +1.408 ns after extraction. Post-GRT timing repair is off in the TT defaults, so the worst slow path stays a chain of buf_1 fanout buffers with ~1 ns slews (110 max-slew violations at slow). Knobs: turn on post-GRT design repair and post-GRT setup repair (global-route parasitics), and add setup margin at placement so the early repair upsizes the critical cones.",
+  "kind": "tt",
+  "top": "tt_um_protocol_emulator",
+  "tiles": "6x4",
+  "sources": ["tt_um_protocol_emulator.v", "pio_chip.sv", "pio_clkdiv.sv", "pio_engine.sv", "pio_fifo.sv", "host_spi.sv"],
+  "clock_period": 20,
+  "tag": "mvp-slow",
+  "librelane": {
+    "USE_SLANG": true,
+    "PL_RESIZER_SETUP_SLACK_MARGIN": 2.0,
+    "RUN_POST_GRT_DESIGN_REPAIR": true,
+    "RUN_POST_GRT_RESIZER_TIMING": true,
+    "GRT_RESIZER_SETUP_SLACK_MARGIN": 0.5
+  }
+}

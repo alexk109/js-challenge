@@ -1,0 +1,197 @@
+; SWD (Serial Wire Debug) controller for the MVP chip -- task B1-FW-swd.
+;
+; The chip plays the CONTROLLER, i.e. the debug probe: it generates SWCLK and
+; drives SWDIO, and the device on the other end is an SW-DP.  The judge is
+; verif/vip/swd.py: `SwdTarget` is the DP under test and `SwdChecker` watches the
+; two nets.  Nothing here is taken from an RP2040 example; every field below
+; comes from docs/mvp-isa.md and research/ref/protocols/swd/.
+;
+; Where the pins are (fw/swd/driver.py builds PINCTRL out of these)
+; ------------------------------------------------------------------
+;   SIDESET_BASE = SWCLK pin, SIDESET_COUNT = 1, no `opt`, SIDE_EN = 0
+;       Every instruction side-sets bit 0 to SWCLK, so `side 1` is the high half
+;       of a bit period and an instruction with no `side` operand is the low
+;       half.  One side-set bit is all a clock needs, and it costs no window.
+;   OUT_BASE = SWDIO pin, OUT_COUNT = 1
+;       `out pindirs, 1` writes SWDIO's *direction* from one OSR bit: 1 = pull
+;       low, 0 = release (docs/mvp-isa.md `### Open drain`).  ADIv5 lets both
+;       sides pull SWDIO low, so open drain is the only correct output mode and
+;       SWDIO's level register stays 0.
+;   IN_BASE = SWDIO pin: `in pins, 1` samples the line.
+;   SET_BASE = FLAG pin, SET_COUNT = 1
+;       `jmp pin` reads FLAG (EXECCTRL.JMP_PIN) and that is how the host says
+;       "this transfer is a write": it forces `set pins, 1` or `set pins, 0`
+;       through SMx_INSTR before it jumps to `xfer`.
+;   CLKDIV = the bit period in core cycles; see HIGH/LOW below.
+;
+; SHIFTCTRL: PULL_THRESH 31, which is what `jmp !osre` at `e1` compares against --
+; osr_cnt is 9 after the request run and 31 after WDATA, and 31 is the only
+; threshold that separates them.  AUTOPULL and AUTOPUSH are off (the program pulls
+; and pushes explicitly), OUT_SHIFTDIR 1 so `out pindirs, 1` sends OSR bit 0
+; first, which is the wire order, and IN_SHIFTDIR 0 so that 32 `in pins, 1` leave
+; the received word in bits 31:0 with bit k = data bit k.  PUSH_THRESH is 1, so
+; `push iffull` hands the ISR over when a receive has filled it and does nothing
+; when the phase that just ended transmitted instead.
+;
+; The bit period
+; -------------
+; One bit period is `3 + HIGH + LOW` core cycles: a loop body is three
+; instructions -- the level change, the clock high and the `jmp` back -- and
+; CLKDIV is 1.0, so one SM cycle is one core cycle and the two delays are the rest
+; of the period.  `tx` and `p2` put the level on the line *before* the clock goes
+; high and `ck`/`rx` put the clock high first, which is what each of them needs:
+; a transmitted bit has to be there before its rising edge, and a sampled one has
+; to be read after it.  The host picks HIGH and LOW
+; (fw/swd/driver.py `retarget`).  A loop body is 2 words, so a 32-bit data phase
+; costs 3 words instead of 32; that is the only reason a bit-bang controller fits
+; in 32 words at all (fw/swd/LIMITS.md has the word budget).
+;
+; HIGH also has to cover the input path.  The DP answers one tick after it sees
+; the rising edge, and this chip reads SWDIO T_IN = 3 ticks after the pad
+; (docs/mvp-isa.md `## Timing`), so `in pins, 1` runs HIGH + 1 cycles after the
+; edge whose bit it samples.  HIGH >= 5 is enough; the driver never goes below 5.
+;
+; The phases
+; ----------
+; A transfer is a sequence of runs of whole bit periods, and each run is one loop
+; or one unrolled pair:
+;
+;   xfer      9 periods  the request byte (8 bits) plus the turnaround
+;   wack/ck   3 periods  the ACK, clocked and not sampled
+;   rd/rx    32 periods  the RDATA bits, sampled into the ISR
+;   p2        3 periods  RDATA parity, RDATA turnaround, turnaround pull-down
+;
+; and a write sends 31 of the 33 WDATA bits from the `tx` loop, bit 31 and the
+; parity bit coming out of `p2`.  Every run length here is one below the number of
+; bit periods, because `set x, n` is n + 1 loop bodies -- which is also why the
+; longest run this program needs, 32 receive periods, is `set x, 30` and not out
+; of reach.  A read therefore clocks 46 periods, which is ADIv5's read frame exactly
+; (REQ 8, Trn 1, ACK 3, DATA 33, Trn 1); a write clocks 46 as well, against 47
+; for a write frame, and the one it does not clock is the trailing turnaround the
+; DP does not need: it has already seen a low line by then.
+;
+; Three loops (tx, ck, rx) rather than one loop with a mode bit, because every
+; loop then has its *own* exit address and the phase after a run is simply the
+; instruction that follows that loop.  One shared loop would need a phase flag in
+; a register, and X, Y, ISR and OSR are all busy.
+;
+; Two exits still have to know something:
+;   * `e1` is the exit of `tx`, which a write runs twice (the request, then
+;     WDATA).  `jmp !osre` separates them, as above.
+;   * `e2` is the exit of `ck`, and it needs the host's read/write flag.  That flag
+;     lives on a pin, read with `jmp pin`, because there is no free register and no
+;     IRQ to park it in.
+; The exit of `rx` needs nothing: WRAP_TOP is its `jmp` and WRAP_BOTTOM is the
+; `push iffull` behind `e1`, so falling off the end of the loop lands there.  The
+; driver works both of those out from the labels (fw/swd/driver.py
+; `execctrl_word`), and `wpre` is placed after the loop because of it.
+;
+; A line reset needs no entry of its own: `xfer` with a word of zeros clocks 46
+; periods with SWDIO released (the request bits are all "released", the ACK loop
+; does not touch the line, the receive loop only samples, and `p2` releases as
+; well), which is most of the 50 clocks ADIv5 asks for [S12].  The host runs it
+; twice and asks `p2` for a low clock at the end of the second, which is what
+; brings the DP out of its reset state ([S11], and the IDCODE read that has to
+; follow it is [S13]).
+
+.program swd
+.side_set 1
+
+.define HIGH 6              ; clock-high delay: SWCLK high for HIGH + 1 cycles
+.define LOW 1               ; clock-low delay: the rest of the period
+
+PUBLIC xfer:
+        pull block           ; the request word from the TX FIFO.  It is the 8-bit
+                              ; header already inverted for the open-drain output
+                              ; (1 = release) in bits 7:0, and bit 8 = 0 so the
+                              ; ninth period, which is the turnaround, leaves SWDIO
+                              ; to the pull-up.
+        set x, 8             ; nine bit periods.  `set x, n` is n + 1 loop bodies: the
+                              ; body runs before the `jmp x--` that tests it, so the
+                              ; counter has to be one below the length
+        jmp tx
+
+; ---- transmit loop: one period, one OSR bit on SWDIO ----------------------
+tx:     out pindirs, 1 [LOW] ; SWDIO's direction from OSR bit 0, put on the line while
+                              ; SWCLK is still low -- ADIv5 changes SWDIO at the falling
+                              ; edge of SWCLK and never while it is high [S19], and the
+                              ; bit has to be there before this period's rising edge
+        nop side 1 [HIGH]    ; SWCLK high: the bit is on the wire
+        jmp x-- tx           ; one more low cycle, then the next period
+
+; ---- exit of `tx`: the request run and the WDATA run both land here ---------
+e1:     jmp !osre wack       ; osr_cnt is 9 after the request and 32 after WDATA,
+                              ; and PULL_THRESH is 31, so this is "the request is on
+                              ; the wire"
+        push iffull          ; WDATA is finished and the ISR is empty, so this does
+                              ; nothing.  For a read the same instruction is reached
+                              ; through the wrap, with 32 RDATA bits in the ISR, and
+                              ; it is what hands them to the host.
+
+; ---- three closing periods, each carrying one OSR bit ----------------------
+p2:     pull block           ; the closing word, bits 2:0 (see the driver's
+                              ; `closing_word`): a read releases all three, a write
+                              ; sends data bit 31, then the WDATA parity bit, then
+                              ; pulls the line low
+        out pindirs, 1 [LOW] ; period 45
+        nop side 1 [HIGH]
+        out pindirs, 1 [LOW] ; period 46
+        nop side 1 [HIGH]
+        out pindirs, 1 [LOW] ; period 47: pull SWDIO low, which is the clock with a
+                              ; low line that the DP needs before it will look at a
+                              ; new header.  Same order as `tx`: the level goes on the
+                              ; line first, while the clock is still low.
+        nop side 1 [HIGH]    ; the rising edge of period 47
+done:   jmp done [15]        ; park with SWCLK low.
+
+; ---- the ACK, clocked and deliberately not sampled -------------------------
+wack:   set x, 1 [(LOW - 1)]    ; TWO periods, not three, and that is the whole
+                              ; subtlety of driving this link.  The DP reacts to a
+                              ; rising edge one tick after the edge and its answer is
+                              ; on the pad two ticks after it (verif/vip/core.py, "so a
+                              ; device reacts one tick after it sees a change"), so the
+                              ; bit it computes at a rising edge is already on the line
+                              ; inside that same edge's high window.  The third ACK bit
+                              ; and the first RDATA bit therefore land in the window
+                              ; after the second, and a controller that clocks three
+                              ; periods for the ACK misses the first data bit.  The
+                              ; same is why a write needs no turnaround period here:
+                              ; the DP reads WDATA bit 0 in the window this loop's
+                              ; second period would have occupied.
+        jmp ck               ; Nothing samples the ACK here; `verif.vip.swd.
+                              ; SwdChecker` is what judges the response.
+                              ; The `[LOW - 1]` on the line above is what keeps every
+                              ; bit period the same length: the gap between the last
+                              ; rising edge of `tx` and the first one of `ck` is four
+                              ; instructions wide, so it needs LOW - 1 cycles of delay to
+                              ; come out at HIGH + LOW + 3 like every other period.  It is
+                              ; the only place the program has to think about where a
+                              ; phase boundary is.
+ck:     nop side 1 [HIGH]
+        nop [LOW]            ; SWCLK low, and SWDIO untouched, so the DP owns it
+        jmp x-- ck
+
+; ---- exit of `ck`: the host's flag says read or write ----------------------
+e2:     jmp pin wpre         ; FLAG = 1 means a write; the host forced
+                              ; `set pins, 1` before `jmp xfer`.  `jmp pin` reads
+                              ; EXECCTRL.JMP_PIN, it takes no operand.
+        set x, 31            ; 32 receive periods
+
+; ---- receive loop: one period, one SWDIO bit into the ISR -----------------
+rx:     nop side 1 [HIGH]    ; SWCLK high.  The read path above falls straight in.
+        in pins, 1 [LOW]     ; SWCLK low, and the bit is in ISR bit 0.  With
+                              ; IN_SHIFTDIR 0 the first bit sampled ends up in bit
+                              ; 31, so 32 samples leave the word in bits 31:0 in
+                              ; wire order.
+        jmp x-- rx           ; the exit is the wrap, onto the `push iffull` above.
+
+; ---- write: the turnaround, then 31 of the 33 WDATA bits ------------------
+wpre:   nop side 1 [HIGH]    ; the ACK/WDATA turnaround, which a write needs and a read
+        nop [LOW]            ; does not: the DP reads WDATA bit 0 from the window after
+                              ; the one it turns around in, so its first `tx` period has
+                              ; to be a period with SWDIO released
+        pull block           ; the WDATA word, inverted for the open-drain output
+        set x, 31            ; 32 periods: WDATA bits 0 to 31.  The parity bit and
+                              ; the turnaround after it come out of `p2`.
+        jmp tx               ; back to `tx`; `e1` sees osr_cnt = 32 and falls
+                              ; through to `p2`

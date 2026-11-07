@@ -1,0 +1,3 @@
+u_chip.g_eng[0].u_eng.g_imem_sram.u_imem.u_imem: 0.7261 mW  {'A:MEN0WEN0REN0': (1, 0.0), 'B:MEN0WEN0REN0': (1, 0.0), 'A:MEN1WEN0REN1': (4000, 14.5227), 'B:MEN1WEN0REN0': (4000, 0.0)}
+u_chip.g_eng[1].u_eng.g_imem_sram.u_imem.u_imem: 0.7261 mW  {'A:MEN0WEN0REN0': (1, 0.0), 'B:MEN0WEN0REN0': (1, 0.0), 'A:MEN1WEN0REN1': (4000, 14.5227), 'B:MEN1WEN0REN0': (4000, 0.0)}
+TOTAL macro dynamic: 1.4523 mW over 4000 cycles

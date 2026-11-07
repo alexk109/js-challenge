@@ -1,0 +1,11 @@
+{
+  "//": "Plan sec. 7 probe 1 (windowed variant), 4 SMs x 20 pins, 60% util, TT layer limits.",
+  "kind": "block",
+  "top": "probe_pinmux_win",
+  "sources": ["phys/probes/rtl/probe_pinmux.sv"],
+  "params": {"N_SM": 4},
+  "core_util": 60,
+  "clock_period": 20,
+  "tag": "early-probe",
+  "librelane": {"USE_SLANG": true, "SYNTH_PARAMETERS": ["N_SM=4", "NP=20", "DW=32"]}
+}

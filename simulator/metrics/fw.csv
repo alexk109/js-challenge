@@ -1,0 +1,30 @@
+date,commit,harness,proto,iss,rtl,instr_count,peak_fifo_depth,cycles_per_bit
+2026-10-02,4f3e1ef,"fw/uart_rx/sweep.py (ChipDevice + UartTx, 20 ns/tick)",uart_rx,pass,skip,24,4,16
+2026-10-02,fb35bdd,i2c-eeprom+checker fast clkdiv=14 stretch=12,i2c,pass,skip,22,3,140.0
+2026-10-02,fb35bdd,i2c-eeprom+checker fast clkdiv=13 stretch=0 (max speed),i2c,pass,skip,22,3,130.0
+2026-10-02,b34c871,i2c-eeprom+checker fast clkdiv=14 stretch=12,i2c,pass,pass,22,3,146.2
+2026-10-02,17bdcd3-dirty,"fw/uart_tx/test_uart_tx.py (ChipDevice + UartRx VIP, 20 ns/tick)",uart_tx,pass,pass,12,,8
+2026-10-02,17bdcd3-dirty,"fw/uart_rx/test_uart_rx.py (ChipDevice + UartTx VIP, 20 ns/tick)",uart_rx,pass,pass,24,,16
+2026-10-02,17bdcd3-dirty,"fw/spi/test_spi.py (ChipDevice + SpiFlashTarget/SpiMonitor, 20 ns/tick)",spi,pass,pass,,,
+2026-10-02,17bdcd3-dirty,"fw/i2c/test_i2c.py (ChipDevice + I2cEepromTarget/I2cTimingChecker, 20 ns/tick)",i2c,pass,pass,,,
+2026-10-04,3e19148,"fw/manchester/sweep.py (ChipDevice + ManchesterRx/ManchesterTimingChecker, 20 ns/tick)",manchester,pass,skip,11,4,5
+date,commit,harness,proto,iss,rtl,instr_count,peak_fifo_depth,cycles_per_slot
+2026-10-04,4b043b1,"fw/onewire/test_onewire.py (ChipDevice + Ds18b20Target/OneWireTimingChecker, 20 ns/tick) clkdiv=50 pin=0",onewire,pass,skip,29,1,3750
+2026-10-04,4b043b1,"fw/onewire/test_onewire.py (ChipDevice + Ds18b20Target/OneWireTimingChecker, 20 ns/tick) clkdiv=47 pin=0",onewire,pass,skip,29,1,3525
+2026-10-04,ddde6aa,jtag-target+checker clkdiv=1 (test config),jtag,pass,skip,17,1,9
+2026-10-04,ddde6aa,jtag-target+checker low_hold=2 high_hold=2 clkdiv=1 (max speed),jtag,pass,skip,17,1,8.0
+2026-10-04,b29999d-dirty,"fw/ws2812 (ws2812, clkdiv=1 + 0/256, 1px, engine 0, pin 0)",ws2812,pass,skip,9,1,63
+2026-10-04,b29999d-dirty,"fw/ws2812 (ws2812, clkdiv=1 + 16/256, 4px, engine 0, pin 3)",ws2812,pass,skip,9,3,66
+2026-10-04,b29999d-dirty,"fw/ws2812 (ws2812_fast, clkdiv=1 + 0/256, 1px, engine 0, pin 5)",ws2812,pass,skip,8,1,40
+2026-10-04,b29999d-dirty,"fw/ws2812 (ws2812_fast, clkdiv=1 + 0/256, 8px, engine 0, pin 6)",ws2812,pass,skip,8,4,40
+2026-10-04,b29999d-dirty,"fw/ws2812 (ws2812, clkdiv=1 + 0/256, 2px, engine 1, pin 7)",ws2812,pass,skip,9,1,63
+2026-10-04,7332a87,"fw/ps2/test_ps2.py (ChipDevice + Ps2Keyboard/Ps2Checker, 20 ns/tick) clkdiv=100",ps2,pass,skip,22,1,3300
+2026-10-04,7332a87,"fw/ps2/test_ps2.py (ChipDevice + Ps2Keyboard/Ps2Checker, 20 ns/tick) clkdiv=94 (max speed)",ps2,pass,skip,22,1,3102
+2026-10-05,f5e4b3f3,"fw/can/test_can.py (ChipDevice + CanNode/CanChecker, 20 ns/tick) clkdiv=40 (125 kbit/s)",can,pass,skip,5,3,400
+2026-10-05,f5e4b3f3,"fw/can/test_can.py (ChipDevice + CanNode/CanChecker, 20 ns/tick) clkdiv=10 (500 kbit/s)",can,pass,skip,5,3,100
+2026-10-05,f5e4b3f3,"fw/can/measure.py (bit-time sweep, clkdiv=1 = 5 Mbit/s, max speed)",can,pass,skip,5,3,10
+2026-10-05,e057a46-dirty,"fw/i2c_target/measure.py (ChipDevice + I2cController/I2cTimingChecker, 20 ns/tick) clkdiv=84 poll=2",i2c_target,pass,skip,29,3,1000.0
+2026-10-05,e057a46-dirty,"fw/i2c_target/measure.py (ChipDevice + I2cController/I2cTimingChecker, 20 ns/tick) clkdiv=43 poll=2",i2c_target,pass,skip,29,3,500.0
+2026-10-05,e057a46-dirty,"fw/i2c_target/measure.py (ChipDevice + I2cController/I2cTimingChecker, 20 ns/tick) clkdiv=15 poll=2",i2c_target,pass,skip,29,3,167.0
+2026-10-05,e057a46-dirty,"fw/i2c_target/measure.py (ChipDevice + I2cController/I2cTimingChecker, 20 ns/tick) clkdiv=12 poll=2",i2c_target,pass,skip,29,3,125.0
+2026-10-05,e057a46-dirty,"fw/i2c_target/measure.py (ChipDevice + I2cController/I2cTimingChecker, 20 ns/tick) clkdiv=5 poll=3",i2c_target,pass,skip,29,3,84.0

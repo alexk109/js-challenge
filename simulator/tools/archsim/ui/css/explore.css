@@ -1,0 +1,56 @@
+/* Explore styles. Scope every selector under .v-explore; colours only through tokens. */
+.v-explore .ex-sec { margin: 0 0 28px; }
+.v-explore .ex-sec h2 { margin: 0 0 6px; font-size: 16px; }
+.v-explore .ex-lead { margin-top: 0; }
+.v-explore .ctl-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 6px 0; }
+.v-explore .small { font-size: 12px; }
+.v-explore th.r, .v-explore td.r { text-align: right; }
+
+/* per-knob impact */
+.v-explore .ex-impact th[scope="row"] { text-align: left; vertical-align: top; font-weight: 600; min-width: 130px; padding: 6px 8px; }
+.v-explore .ex-impact td { padding: 4px 6px; }
+.v-explore .ex-alts { display: flex; flex-wrap: wrap; gap: 6px; }
+.v-explore .ex-alt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 4px 8px; min-width: 120px; max-width: 220px; border: 1px solid var(--axis); border-radius: 4px; background: var(--surface); color: var(--ink); }
+.v-explore .ex-alt.has-up { border-left: 4px solid var(--good); }
+.v-explore .ex-alt.has-down { border-left: 4px solid var(--bad); }
+.v-explore .ex-alt.has-up.has-down { border-left-style: double; }
+.v-explore .ex-alt.chip-marginal { border-style: dashed; border-color: var(--warn); }
+.v-explore .ex-alt.chip-fail { border-style: dashed; border-color: var(--bad); }
+.v-explore .ex-alt.invalid { opacity: .6; cursor: default; }
+.v-explore .ex-alt-top { font-size: 13px; }
+.v-explore .ex-alt-flips { display: flex; flex-direction: column; font-size: 11px; }
+.v-explore .ex-flip.up { color: var(--ink); }
+.v-explore .ex-flip.down { color: var(--ink-2); font-style: italic; }
+.v-explore .ex-alt-chip, .v-explore .ex-alt-d { font-size: 11px; }
+
+/* what would it take */
+.v-explore .ex-cands { width: 100%; }
+.v-explore .ex-cands tr[data-side] { cursor: pointer; }
+.v-explore .ex-cands tr[data-side]:hover { background: var(--page); }
+.v-explore .ex-cand.estimate td:nth-child(2) { border-left: 3px dashed var(--warn); }
+.v-explore .ex-cand.breaks .ex-break { color: var(--ink); font-size: 12px; }
+.v-explore .ex-restore { margin-top: 2px; color: var(--ink-2); }
+.v-explore .ex-oor { border-left: 4px solid var(--bad); padding-left: 8px; }
+.v-explore .ex-hints { margin: 4px 0 0; padding-left: 18px; }
+.v-explore .ex-solve { margin-top: 14px; }
+.v-explore .ex-solve h3 { margin: 0 0 4px; font-size: 14px; }
+.v-explore .ex-solve-table { width: 100%; }
+.v-explore button.linkish { border: none; background: none; padding: 0; color: var(--accent); text-decoration: underline; min-height: 0; }
+
+/* charts */
+.v-explore .ex-chart { max-width: 760px; overflow-x: auto; }
+/* phones: keep the chart text at >= 10px (11px text at 640/680 of its drawn size) and scroll the chart sideways instead */
+.v-explore .ex-chart svg { min-width: 640px; }
+.v-explore svg .chipfail { fill: var(--bad); fill-opacity: .14; stroke: none; }
+.v-explore svg .curule { stroke: var(--ink-2); stroke-dasharray: 1 3; }
+.v-explore svg .bindrule { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 3; }
+.v-explore svg .band { fill: var(--s1); fill-opacity: .18; stroke: none; }
+.v-explore svg .nomline { fill: none; stroke: var(--s1); stroke-width: 2; }
+.v-explore svg .whisker { stroke: var(--s1); stroke-width: 2; opacity: .5; }
+.v-explore svg .pt { fill: var(--s1); stroke: var(--surface); stroke-width: 1; cursor: pointer; }
+.v-explore svg .pt.chip-fail { fill: var(--surface); stroke: var(--bad); stroke-width: 2; }
+.v-explore svg .pt.chip-marginal { stroke: var(--warn); stroke-width: 2; }
+.v-explore svg .frontline { fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.v-explore svg .plabel.front { fill: var(--ink); font-weight: 700; }
+.v-explore svg .flag { font-weight: 700; }
+.v-explore svg .pp { cursor: default; }

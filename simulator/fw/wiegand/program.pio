@@ -1,0 +1,113 @@
+;
+; Wiegand reader for the MVP chip.
+;
+; The chip plays the **reader** (the controller, the side that initiates: it is the box at the
+; door that sends a credential the moment a card is presented).  Two open-drain nets, D0 and
+; D1, both pulled high; a bit is a **low pulse** on one of them and both lines are high again
+; between bits (research/ref/protocols/wiegand/03_wikipedia_wiegand_interface.md).  A 26-bit
+; frame is 26 pulses, one line at a time, then the lines go quiet for longer than a pulse
+; interval may be, which is the only frame boundary a receiver can see
+; (research/ref/protocols/wiegand/05_accessgrid_26bit_decode.md).
+;
+; Where the pins are
+; ---------------
+; D0 and D1 are two adjacent **uio** pins, D1 = D0 + 1, because open drain on this chip is a
+; direction and not a level (docs/mvp-isa.md `### Open drain`): the level register of an open
+; drain pin stays 0 and the program toggles the direction, `1` pulling the line low and `0`
+; releasing it.  Both lines have to be uio pins; an input-only or output-only protocol pin
+; cannot be pulled low at all (docs/mvp-isa.md `## Pins`).
+;
+;   OUT window, 2 pins, OUT_BASE = D0, OUT_COUNT = 2
+;       `out pindirs, 2` puts two OSR bits on the two directions: OSR[0] on D0, OSR[1] on D1.
+;       One pair per data bit, 01 for a 0 (pull D0) and 10 for a 1 (pull D1).  The level of
+;       both lines stays 0 throughout, so nothing ever drives a hard 1 against the pull-up.
+;   SET window, 2 pins, SET_BASE = D0, SET_COUNT = 2
+;       `set pindirs, 0` releases both lines at once, which is what the pause between two
+;       pulses is.  It has to be two pins wide: a one-pin SET window would leave the other
+;       line driven and the two pulses would run together, which the specification forbids
+;       outright ("the pulses will not overlap or occur simultaneously",
+;       research/ref/protocols/wiegand/01_farpointe_understanding_wiegand.md).
+;   no side-set at all
+;       The directions have to come from the OSR (the data), not from an immediate, so the
+;       side-set channel would only fight the OUT channel for the same pins -- and with
+;       `SIDESET_COUNT` left at its reset value of 2 and `SIDE_EN` at 0 *every* instruction
+;       side-sets level 0 into `SIDESET_BASE` and its neighbour on every SM cycle
+;       (docs/mvp-isa.md `### Delay/side-set field`).  The host writes `SIDESET_COUNT = 0`,
+;       which is also what leaves the delay field all five bits.
+;
+; Why the data is two bits per frame bit
+; --------------------------------------
+; A frame bit chooses *which of two pins* to pull low, and `out pindirs, n` takes its value
+; from the OSR, so one frame bit is naturally one OUT.  But `out pindirs, 1` writes OSR[0] to
+; D0 and 0 to D1, and 0 means *released*, so a single bit can only ever say "pull D0" or
+; "release both" -- there is no way to write "pull D1" from one OSR bit.  The MVP has no
+; instruction that branches on a data bit either: `jmp` tests X, Y, OSR-emptiness and one
+; input pin, and the only way to get a bit out of the OSR is to shift it, which moves it to
+; the pin as it goes.  So the program shifts out *direction pairs*: 01 for a data 0 and 10 for
+; a data 1, and the host builds that word from the credential it was given
+; (fw/wiegand/driver.py, `direction_pairs()`).  A 26-bit frame is 26 pairs = 52 OSR bits =
+; two TX words; AUTOPULL with `PULL_THRESH = 32` refills the OSR from the TX FIFO when a word
+; runs out, so the loop below never pulls by hand after the first word.
+;
+; The timing
+; ----------
+; One frame bit is one `out pindirs, 2` (the pulse) followed by one `set pindirs, 0` (the
+; pause), so a bit is `(1 + PW_DELAY) + (1 + PI_DELAY)` SM cycles and CLKDIV alone sets the
+; speed: a pulse lasts `PW_TICKS * CLKDIV` core cycles and a pause `PI_TICKS * CLKDIV`.  The
+; host picks the divider inside the window the specification gives,
+; research/ref/protocols/wiegand/01_farpointe_understanding_wiegand.md (SIA AC-01, quoted by
+; three independent documents): pulse width 20 us .. 100 us, pulse interval 200 us .. 20 ms.
+; Both delays are read back out of the assembled words by fw/wiegand/driver.py, so the driver
+; cannot get the divider out of step with this file.
+;
+; One limit worth knowing, because it decides which real readers this program can imitate: the
+; delay field is five bits, so each phase is at most 32 SM cycles and the ratio of pause to
+; pulse is at most 32.  BALTECH's shipped defaults, 50 us and 2 ms, are a ratio of 40
+; (research/ref/protocols/wiegand/04_baltech_wiegand.md) and therefore *not* reachable from one
+; program with one divider; 50 us and 1.6 ms is, and is inside the same window.  See
+; fw/wiegand/README.md `## What the 32-word IMEM and one divider do not reach`.
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`):
+;
+;   SHIFTCTRL  OUT_SHIFTDIR = 1 (its reset value: shift right, so the first pair of the word
+;              is the first frame bit), AUTOPULL = 1 and PULL_THRESH = 0, which means 32
+;              (`thresh(f) = f if f != 0 else 32`, docs/mvp-isa.md `## Conventions`): the OSR
+;              is refilled from the TX FIFO as soon as a whole word has been shifted out.
+;   PINCTRL    OUT_BASE = SET_BASE = D0, OUT_COUNT = SET_COUNT = 2, SIDESET_COUNT = 0.
+;   EXECCTRL   WRAP_BOTTOM = 0, WRAP_TOP = the last instruction below.  No SIDE_EN, because
+;              with SIDESET_COUNT = 0 there is never a side-set.
+;   CLKDIV     the 16.8 divider; see docs/mvp-isa.md `### Clock divider`.
+;
+; The host pushes two TX words per frame and forces `jmp send`; the engine is parked in `idle`
+; with both lines released before that and after the frame, and between two frames the host has
+; to leave the bus quiet for longer than a pulse interval may be, or a receiver cannot tell the
+; frames apart (fw/wiegand/driver.py `frame_gap_ticks`).  `idle` is therefore the *first*
+; instruction and the wrap target: an engine that has nothing to send never shifts a bit, and
+; there is no `irq` to park it with (docs/mvp-isa.md `## Differences from RP2040`, item 3).
+;
+.program wiegand
+
+.wrap_target idle
+.wrap last
+
+.define PAIRS 26                 ; the 26-bit layout: 26 direction pairs
+.define PW_DELAY 0               ; a pulse is  1 + PW_DELAY =  1 SM cycle
+.define PI_DELAY 9               ; a pause is  1 + PI_DELAY = 10 SM cycles
+
+PUBLIC idle:
+        set pindirs, 0            ; both lines released: the bus is idle
+        jmp idle                  ; and stays idle until the host forces `jmp send`
+
+PUBLIC send:
+        set y, (PAIRS-1)          ; pairs still to send after the first one, so `jmp y--`
+                                   ; runs the loop PAIRS times and falls through on the last
+        pull block                ; the first 16 pairs (32 OSR bits) from the TX FIFO.  A
+                                   ; blocking pull, so a host that has not queued the frame
+                                   ; yet parks here instead of putting an idle bus on the
+                                   ; wire; with AUTOPULL on and a full OSR it is a no-op.
+loop:   out pindirs, 2 [PW_DELAY] ; the pulse: OSR[0] on D0, OSR[1] on D1, one SM cycle
+        set pindirs, 0 [PI_DELAY] ; the pause: both lines released, ten SM cycles
+        jmp y-- loop              ; 25 more pairs, then on to `park`
+last:
+        jmp idle                  ; the frame is over; `last` is the wrap top, so a PC that ever
+                                   ; ran off the end would land back in the idle preamble

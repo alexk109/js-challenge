@@ -1,0 +1,65 @@
+;
+; I2C read-only target: answers ANY address with an ACK, then returns the bytes it pulls from its
+; TX FIFO to a master that reads.  The smallest I2C device that makes sense as a bridge sink
+; ("a UART appears as an I2C device"): no address decode (the PIO subset cannot compare), no
+; register pointer, no write path, no clock stretching (a slave must not drive SCL).
+;
+; Word format: TX FIFO word bits 31:24 = the data byte, MSB first (as fw/uart_rx pushes it).
+; The program inverts the word (`mov osr, osr !`) because `out pindirs, 1` pulls SDA LOW for a 1:
+; a 0 data bit is "pull low", so the OSR holds the pindirs sequence.
+;
+; Flow: START (SDA falls, SCL high) -> 8 address clocks (ignored) -> ACK (pull low) -> for each
+; byte: the 8 data bits, release SDA, the master's ACK/NAK clock -> ACK = next byte, NAK = wait
+; for the STOP and go back to idle.  The next word is pulled during the master's ACK clock, in
+; the shadow of the master's high period.
+;
+; UNDERRUN: if the TX FIFO is empty when a byte is needed, `pull block` stalls the engine, the
+; master keeps clocking and the phase is lost (bytes come back wrong until the next STOP).
+; There is no clock stretching to hide it; the bridge harness therefore reads only bytes that
+; have already arrived, and this is part of what the bridge measures.
+;
+; Host registers: JMP_PIN = SDA, OUT_BASE = SET_BASE = SDA (a uio pin), OUT_COUNT = SET_COUNT = 1,
+; OUT_SHIFTDIR 0 (MSB first), AUTOPULL 0, AUTOPUSH 0, no side-set.  SCL is any input pin, read
+; only with `wait gpio`.  Pins are .define'd here and rewritten by tools/bench/bridges.py.
+;
+.program i2c_rd_target
+
+.define PUBLIC SDA_PIN 2
+.define PUBLIC SCL_PIN 11
+
+idle:
+    wait 0 gpio SDA_PIN          ; START: SDA falls while SCL is high
+    wait 0 gpio SCL_PIN          ; the master's low phase
+    set x, 7                     ; eight address clocks, content ignored
+addr:
+    wait 1 gpio SCL_PIN
+    wait 0 gpio SCL_PIN
+    jmp x-- addr
+    set pindirs, 1               ; ACK the address (pull SDA low)
+    pull block                   ; first data word
+    mov osr, osr !
+    wait 1 gpio SCL_PIN          ; the ACK clock, rising
+    jmp fall9
+next_byte:
+    set pindirs, 0               ; release SDA: the master drives its ACK / NAK
+    wait 1 gpio SCL_PIN          ; ninth clock, rising
+    jmp pin, nak                 ; SDA high: NAK, the master is done
+    pull block                   ; ACK: next word, while the master's high period runs
+    mov osr, osr !
+fall9:
+    wait 0 gpio SCL_PIN          ; the ACK clock fell: bit 7 goes out now
+    out pindirs, 1
+    set x, 6
+bits:
+    wait 1 gpio SCL_PIN
+    wait 0 gpio SCL_PIN
+    out pindirs, 1               ; bits 6..0
+    jmp x-- bits
+    wait 1 gpio SCL_PIN          ; bit 0's clock
+    wait 0 gpio SCL_PIN
+    jmp next_byte
+nak:
+    wait 0 gpio SCL_PIN          ; the NAK clock falls
+    wait 1 gpio SCL_PIN          ; STOP: SCL rises ...
+    wait 1 gpio SDA_PIN          ; ... then SDA rises
+    jmp idle

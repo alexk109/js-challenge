@@ -1,0 +1,10 @@
+/design/hdl/run/*
+!/design/hdl/run/.gitkeep
+/design/phy/run/*
+!/design/phy/run/.gitkeep
+/verification/run/*
+!/verification/run/.gitkeep
+/firmware/run/*
+!/firmware/run/.gitkeep
+/tools/*
+!/tools/.gitkeep

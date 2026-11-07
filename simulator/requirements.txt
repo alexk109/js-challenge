@@ -1,0 +1,5 @@
+# Runtime + test dependencies (Python 3.10 or newer).
+pytest>=7
+quickjs==1.19.4        # runs the archsim model (the `analytic` level) in-process
+cocotb==2.0.1         # drives the Verilog testbenches (the `rtl` level); 2.1.0 made the simulator die every other run, so it is pinned. Also needs verilator on PATH
+pyyaml>=6              # only the optional synth / flow levels read YAML

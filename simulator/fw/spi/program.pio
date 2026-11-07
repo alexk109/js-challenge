@@ -1,0 +1,214 @@
+;
+; SPI master (PIO) for the MVP chip -- JEDEC ID and a 16-byte read from a serial flash.
+;
+; Two programs, one per SPI mode.  They are the same ten words with the two SCK
+; phase values swapped, because a mode is only the idle level of SCK and a mode is a
+; constant in the instruction word:
+;
+;   spi_read_m0   mode 0: CPOL 0, CPHA 0   SCK idles low
+;   spi_read_m3   mode 3: CPOL 1, CPHA 0   SCK idles high
+;
+; Protocol pins (docs/mvp-isa.md `### The 18 protocol pins`, indices 0..17):
+;
+;   pin 0   CS     side-set bit 0, low = the flash is selected
+;   pin 1   SCK    side-set bit 1
+;   pin 2   MOSI   OUT window (OUT_BASE = 2, OUT_COUNT = 1)
+;   pin 3   MISO   IN window  (IN_BASE  = 3)
+;
+; `.side_set 2` puts both clock lines on the side-set channel, which is the only way to
+; assert CS: within one engine the side-set channel beats the OUT/SET channel
+; (docs/mvp-isa.md `### Pin writes`), and with SIDESET_COUNT = 2 every instruction side-sets,
+; so CS follows SCK out of the loop without an extra instruction.  With SC = 2 the delay
+; field is bits 12:10, i.e. 0..7, which is all the loop needs.
+;
+; The price is that *every* instruction drives CS and SCK, including the ones that must not
+; touch them, so the side-set value of each instruction is part of the design.  Two names
+; for the two phases, and side-set bit 0 is CS, bit 1 is SCK:
+;
+;   side 0 = CS low,  SCK low     side 1 = CS high, SCK low
+;   side 2 = CS low,  SCK high    side 3 = CS high, SCK high
+;
+;   phase0   SCK in the first half of a bit period  (mode 0: side 0, mode 3: side 2)
+;   phase1   SCK in the second half, and the level the capture edge ends on
+;            (mode 0: side 2, mode 3: side 0)
+;   idle     what `enter` leaves behind: CS low, SCK at the mode's idle level, which is
+;            phase0 in both modes, so `enter` itself makes no edge
+;   done     CS high, SCK still at phase0 (which is where `start` left it), so the
+;            transaction ends with no extra edge: this is the idle pin state with CS high
+;
+; Every instruction that is not a data bit therefore carries phase0 or phase1, and only one
+; of them ever moves SCK:
+;
+;   `enter`  phase0, once: CS low.  SCK is already at the mode's idle level, so no edge.
+;   `start`  phase0: the byte counter.  At a byte boundary this drops (mode 0) or raises
+;            (mode 3) SCK one cycle before the `out` would, which just makes the launch
+;            edge a cycle earlier and the MISO margin a cycle bigger.  The `out` that
+;            follows writes MOSI and finds SCK already where it wants it, so there is no
+;            second edge.
+;   `nop`    phase0, twice: they only lengthen the CS hold after the last SCK edge (3 core
+;            cycles, the spec asks for 2).
+;   `body`   phase0: re-arm the bit counter.
+;   `done`   phase1 with CS high: the halt, and where the host finds the PC.
+;
+; SHIFTCTRL (written by fw/spi/driver.py):
+;
+;   OUT_SHIFTDIR = 0   left: the MSB leaves the OSR first, so a TX word is a big-endian
+;                      byte string (the host left-justifies it, docs/mvp-isa.md difference 11)
+;   IN_SHIFTDIR  = 0   left: the first bit received ends up as the MSB of the byte
+;   PUSH_THRESH  = 8    autopush one byte per RX FIFO word, in bits 7:0 with the
+;                      first bit received as the MSB
+;   PULL_THRESH  = 32   autopull one TX word every 32 bits
+;
+; The host arms the byte counter with a forced `set x, N` and starts the program with a
+; forced `jmp enter`; docs/mvp-regmap.md `### Enable, restart` says the host cannot write
+; the PC any other way, because `SMe_ADDR` is read-only.  X is the number of bytes the
+; whole transaction clocks, opcode and 24-bit address included.  `jmp x--` tests X *before*
+; it decrements (docs/mvp-isa.md `### Field values`), so the counter is decremented at the
+; top of the loop and X really is the number of bytes: the program clocks exactly that many
+; whatever the host does with the TX FIFO.
+;
+; Timing: one bit is `out pins, 1 [5]` (MOSI out, SCK to phase0) + `in pins, 1` (sample
+; MISO, SCK to phase1) + `jmp y--`, so 8 SM cycles per bit and one cycle of margin on MISO.
+; The T_OUT = 1 / T_IN = 3 loop of docs/mvp-isa.md `## Timing` is what sets the 5-cycle
+; delay: the flash changes MISO at the launch edge, the VIP puts it on the bus 2 core
+; cycles later, and the engine's input pipeline needs T_IN = 3 more, so the sample has to
+; be at least 5 SM cycles after the edge that launched the bit.  With delay 4 there is no
+; margin at all and the read would work only by luck.  8 core cycles per bit at CLKDIV 1.0
+; is 6.25 MHz, which is also the rate docs/mvp-regmap.md `### Physical layer` calls
+; guaranteed for reads.
+;
+; A byte is 8 bits plus the two instructions that re-arm it (`jmp x--` and `set y, 7`), so
+; a byte takes 66 SM cycles and the bit rate has 3% jitter at the byte boundary.  Neither
+; model cares, the flash only counts edges, and it buys a program that cannot end a
+; transaction early.
+;
+
+.program spi_read_m0
+.side_set 2
+
+.wrap_target start
+.wrap last
+
+PUBLIC enter:
+    jmp start         side 0        ; idle: CS low, SCK low, no edge
+PUBLIC start:
+    jmp x--, body     side 0        ; the launch edge of the next bit, one cycle early
+    nop               side 0
+    nop               side 0
+PUBLIC done:
+    jmp done          side 1        ; CS high, SCK left at phase0 (low)
+PUBLIC body:
+    set y, 7          side 0
+PUBLIC bit:
+    out pins, 1       side 0 [5]    ; MOSI out, SCK to phase0
+    in  pins, 1       side 2        ; sample MISO, SCK to phase1: the capture edge
+    jmp y--, bit      side 2
+last:
+    jmp start         side 2
+
+.program spi_read_m3
+.side_set 2
+
+.wrap_target start
+.wrap last
+
+PUBLIC enter:
+    jmp start         side 2        ; idle: CS low, SCK high, no edge
+PUBLIC start:
+    jmp x--, body     side 2        ; the launch edge of the next bit, one cycle early
+    nop               side 2
+    nop               side 2
+PUBLIC done:
+    jmp done          side 3        ; CS high, SCK left at phase0 (high)
+PUBLIC body:
+    set y, 7          side 2
+PUBLIC bit:
+    out pins, 1       side 2 [5]    ; MOSI out, SCK to phase0 (high)
+    in  pins, 1       side 0        ; sample MISO, SCK to phase1 (low): the capture edge
+    jmp y--, bit      side 0
+last:
+    jmp start         side 0
+
+
+; Modes 1 and 2 (CPHA 1).  A phase is not a third kind of program: `verif/vip/spi.py`'s
+; `is_capture_edge` says a mode is (CPOL, CPHA), and CPHA only decides *which* edge samples the
+; data and which one lets the target change it.  So the two programs below are the mode 0 and
+; mode 3 programs with the two side-set values of the bit loop swapped:
+;
+;   mode 0 (CPOL 0, CPHA 0):  out side 0 -> falling is the launch edge, in side 2 -> rising is
+;                                  the capture edge, and the sample is on the rising one
+;   mode 1 (CPOL 0, CPHA 1):  out side 2 -> no edge, MOSI ready before the capture edge,
+;                                  in side 0 -> falling is the capture edge *and* the sample,
+;                                  jmp side 2 -> rising is the launch edge.  Every instruction
+;                                  outside the loop carries the *high* side-set value as well,
+;                                  because in this mode a falling edge at the byte boundary would
+;                                  be a ninth capture edge and the target would sample the idle
+;                                  level as a data bit.
+;   mode 2 (CPOL 1, CPHA 1):  out side 0 -> falling is the launch edge and MOSI is ready,
+;                                  in side 2 -> rising is the capture edge *and* the sample,
+;                                  jmp side 2 -> no edge
+;   mode 3 (CPOL 1, CPHA 0):  the same loop as mode 0, with the idle levels at CPOL 1
+;
+; Two rules hold in all four.  MOSI is written three core cycles before the edge the target
+; captures it on -- long enough for the write to reach the pin (`T_OUT = 1`) and for the target to
+; see it.  And the master's `in pins, 1` *is* the capture edge, so the MISO it samples was launched
+; by the target at the previous edge, three core cycles earlier: that is what `T_IN = 3` is for,
+; and it is why the first byte a target sends is always one behind the question
+; (`first_output_index`).
+;
+; The CPHA 1 pair splits the bit period 5/4 rather than leaving one phase one cycle long -- `[4]`
+; and `[2]` below, three instructions of 5, 3 and 1 core cycles -- because a phase of one cycle is
+; a glitch on a real wire, and `SpiMonitor` says so (`sck high time 1 ticks < 2`).  That is nine
+; core cycles to the bit where the CPHA 0 pair's `[5]` and no delay make eight, so the CPHA 1 pair
+; clocks at 5.556 MHz and modes 0 and 3 at 6.250 MHz; both numbers are
+; measured (`mode 1: bit period 9 core cycles`).
+
+.program spi_read_m1
+.side_set 2
+
+.wrap_target start
+.wrap last
+
+PUBLIC enter:
+    jmp start         side 0        ; idle: CS low, SCK low, no edge
+PUBLIC start:
+    jmp x--, body     side 0        ; the byte counter, and no edge: in this mode the capture edge
+    nop               side 0        ; is the falling one, so a byte boundary must not make one
+    nop               side 0
+PUBLIC done:
+    jmp done          side 1        ; CS high, SCK left low where it was: no edge on the way out
+PUBLIC body:
+    set y, 7          side 0
+PUBLIC bit:
+    out pins, 1       side 2 [4]    ; SCK high: the launch edge, and MOSI out for the capture below
+    in  pins, 1       side 0 [2]    ; SCK low: the capture edge, and the sample.  Five core
+                                    ; cycles after the launch, so the MISO the target put out
+                                    ; there has been through T_IN = 3 with two cycles to spare
+    jmp y--, bit      side 0        ; SCK stays low: the byte ends where it began
+last:
+    jmp start         side 0
+
+.program spi_read_m2
+.side_set 2
+
+.wrap_target start
+.wrap last
+
+PUBLIC enter:
+    jmp start         side 2        ; idle: CS low, SCK high, no edge
+PUBLIC start:
+    jmp x--, body     side 2        ; the byte counter, and no edge
+    nop               side 2
+    nop               side 2
+PUBLIC done:
+    jmp done          side 3        ; CS high, SCK left high where it was: no edge on the way out
+PUBLIC body:
+    set y, 7          side 2
+PUBLIC bit:
+    out pins, 1       side 0 [4]    ; SCK low: the launch edge, and MOSI out for the capture below
+    in  pins, 1       side 2 [2]    ; SCK high: the capture edge, and the sample.  Five core
+                                    ; cycles after the launch, so the MISO the target put out
+                                    ; there has been through T_IN = 3 with two cycles to spare
+    jmp y--, bit      side 2        ; SCK stays high: the byte ends where it began
+last:
+    jmp start         side 2

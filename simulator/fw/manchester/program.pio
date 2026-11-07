@@ -1,0 +1,251 @@
+;
+; Manchester (biphase) transmitters for the MVP chip.
+;
+; Two programs, one per chip split, because the split decides which bit rates the wire can
+; legally carry.  Both are the same shape -- pull, sync preamble, eight data bits of two
+; instructions each, an idle gap, and back to the top -- and both are assembled by
+; asm/pioasm.py; fw/manchester/driver.py picks one by name and derives the CLKDIV from the
+; words.
+;
+;   .program manchester        5 SM cycles per bit: 10BASE-T, 10 Mbit/s at CLKDIV = 1.0
+;   .program manchester_even   4 SM cycles per bit: the two chips of a cell are the same
+;                              length, so every bit rate this divider can express is exact
+;
+; The chip is the *transmitter* on one push-pull pin; the independent judge is
+; verif/vip/manchester.py (ManchesterRx + ManchesterTimingChecker), written from the
+; specifications saved in research/ref/protocols/manchester/.  One 32-bit TX word carries
+; one 8-bit message: the program frames it with the two-bit sync preamble AN2358 asks for,
+; so the host pushes plain bytes and nothing else.
+;
+; The line code, and why two instructions per data bit
+; ---------------------------------------------------
+; IEEE 802.3 rises in the middle of a 1 and falls in the middle of a 0 (AN1120a: "In
+; Ethernet, a logical '0' is encoded as a high-to-low transition, while a logical '1' is
+; encode as a low-to-high transition"), so one bit is two half-bit level periods -- two
+; "chips" in AN3435's word -- of the line:
+;
+;       bit 1 ->  low  then high          bit 0 ->  high then low
+;
+; The mid-bit transition is what makes the signal self-clocking and it is mandatory in
+; every cell (AN2358: "each bit is transmitted with a transition in the middle of bit
+; time").  A transition *at a bit boundary* is inserted only when it has to be, because
+; the line has to be in the right level for the next cell's mid-bit transition: AN2358
+; "additional transitions are inserted between bits to satisfy the mid-bit transition
+; rule".  Both halves of that fall out of the chip list below without the program ever
+; deciding anything:
+;
+;       chip 2k    = the first half of bit k   = NOT b_k
+;       chip 2k+1  = the second half of bit k  = b_k
+;       boundary between cells k and k+1: a transition iff NOT b_k != NOT b_{k+1},
+;                                                 i.e. iff b_k == b_{k+1}
+;
+; So the encoder is "the two halves of a cell are the bit and its complement", and the
+; boundary rule is a consequence of that, not a rule this program has to implement.  Two
+; instructions per bit, both writing the one-pin OUT window:
+;
+;       mov pins, osr !     writes ~OSR, whose bit 0 is ~b_k: the first half.  A MOV never
+;                           stalls and never shifts, so the bit is still there.
+;       out pins, 1         writes OSR bit 0 = b_k: the second half, and shifts the OSR
+;                           right by one so the next iteration sees b_{k+1}.
+;
+; There is no way to do it in one: the only instruction that shifts the OSR is OUT, and the
+; only way to write a pin level from a register *inverted* is MOV with the invert Op
+; (docs/mvp-isa.md `### Field values`, MOV Op `01`).  Sixteen data bits would therefore need
+; 32 words before any loop overhead, which does not fit the 32-word IMEM, so one word is
+; one 8-bit message.
+;
+; What decides the bit rate: the length of the two chips
+; ------------------------------------------------------
+; Three instructions make a bit -- the two chip writes and the loop's `jmp` -- and the pin
+; holds its level through all three, so the chips are
+;
+;       first chip  = 1 + delay(`mov pins, osr !`)  SM cycles
+;       second chip = 1 + delay(`out pins, 1`) + 1  SM cycles   (the `jmp` holds it)
+;       bit         = the sum of those
+;
+; and CLKDIV then scales one SM cycle into core cycles.  The line code wants the two chips
+; of a cell to be *equal* (half a bit each), so how far off that split may be is a question
+; about the receiver, and the answer is the half-bit window of the judge:
+; `verif/vip/manchester.py` accepts a measured interval inside
+; [half - tol, half + tol] for a bit-boundary transition, with
+; tol = max(1 tick, 10 % of a half bit) -- AN2358's ">10 percent frequency tolerance on
+; each side" plus the one tick that `core.py`'s tick grid costs.
+;
+;   .program manchester      5 SM cycles per bit, chips 3 and 2: half a bit is 2.5, so each
+;                            chip is 0.5 SM cycles (0.5 * CLKDIV ticks) off a half bit.
+;                            Legal while that stays inside the tolerance: at CLKDIV = 1.0
+;                            that is the 10BASE-T rate of 10 Mbit/s (AN1120a's 100 ns bit
+;                            time, and the fastest this judge can classify at all: its
+;                            half-bit window [1.5, 3.5] ticks and bit window [4, 6] stop
+;                            being disjoint at 12.5 Mbit/s, and `profile_timings` raises
+;                            rather than guess).  At CLKDIV = 2.0 (5 Mbit/s) the error is
+;                            exactly the one-tick allowance, and at CLKDIV = 3.0 or more it
+;                            is outside it -- so this program reaches 10 and 5 Mbit/s and
+;                            no slower rate.
+;
+;   .program manchester_even 4 SM cycles per bit, chips 2 and 2: exact at every rate, so
+;                            the wire is on the judge's bit grid to the tick whatever
+;                            CLKDIV is.  The ceiling is CLKDIV = 1.0 again, 12.5 Mbit/s,
+;                            but that is exactly the rate the judge refuses to classify, so
+;                            the fastest *provable* rate is CLKDIV = 2.0 = 6.25 Mbit/s --
+;                            and from there every rate whose bit period is a multiple of
+;                            four ticks, which includes 100 kbit/s (CLKDIV = 125) and
+;                            AN1470a's worked example of 25 kbit/s (CLKDIV = 500).
+;
+; The sync preamble, and the phase it has to leave behind
+; ------------------------------------------------------
+; There is no start bit in this line code, so a receiver anchors on the first transition of
+; a stream and takes it for a mid-bit transition.  That is only right if the first chip on
+; the wire is the level the line was already at, which is what AN2358's rule is: "always
+; start messages with a '0' bit when the idle state is low. Or, send a 0 to 1 (or 1 to 0)
+; preamble to guarantee a correct synchronization in any situation".  The line idles high
+; here (the profile's default), so the preamble is the pair 0, 1 -- whose two cells are the
+; chip list 1, 0, 0, 1: no transition at the first chip (it is the idle level), a falling
+; mid-bit transition for the first preamble bit, no transition between the cells, and a
+; rising one for the second.
+;
+; Two `set pins` instructions make that, with no OSR involved, and their delays are what
+; put the *data* bits back on the judge's bit grid -- the grid is anchored on the preamble's
+; first mid-bit transition and advances by exactly one bit time, so the first data bit's
+; mid-bit transition has to land two bit times after it:
+;
+;       set pins, 0 [PRE_LOW_HOLD]   level 0 for the preamble's bit-0 second half and its
+;                                    bit-1 first half: exactly one bit time, so PRE_LOW_HOLD
+;                                    is (SM cycles per bit - 1).
+;       set pins, 1                  level 1, no delay.  This one instruction and the `set x`
+;                                    below it are the preamble's last cell's second half --
+;                                    a half bit, two SM cycles -- and then the data loop's
+;                                    first chip starts on the cell boundary.
+;       set x, (DATA_BITS - 1)       the counter, in the middle of that half bit, which is
+;                                    why it must be exactly one instruction there.
+;
+; Getting that half bit one SM cycle wrong is invisible at 10 Mbit/s (the judge's grid
+; tolerance is one tick, and the error would be one tick) and a violation at any slower
+; rate, so the driver checks the phase instead of trusting it; see `message_sm_cycles` and
+; `fw/manchester/README.md`.
+;
+; The preamble is also what makes the G.E. Thomas convention nearly free: its preamble is
+; the complement pair 1, 0, which drives the same two chip levels in the same two slots, and
+; its data chips are the complement of IEEE 802.3's -- so the host pushes the complement of
+; each byte (`fw/manchester/driver.py`, `convention="thomas"`) and the program, unchanged,
+; emits a Thomas stream.  See README.md.
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`), all of it built by
+; fw/manchester/driver.py:
+;
+;   SHIFTCTRL  OUT_SHIFTDIR = 1 (its reset value: shift right, so the least significant
+;              data bit leaves first), AUTOPULL = 1 and PULL_THRESH = 8: the eight
+;              `out pins, 1` of a message empty the OSR and the eighth refills it from the
+;              TX FIFO in the same SM cycle, so the `pull block` at the top of the loop is
+;              a no-op barrier in steady state and never stalls (docs/mvp-isa.md
+;              `### Instruction semantics`, PULL).
+;   PINCTRL    SIDESET_COUNT = 0.  These programs have no `.side_set`, so all five bits of
+;              bits 12:8 are delay -- and the *reset* value of SIDESET_COUNT is 2, which
+;              with the reset EXECCTRL.SIDE_EN = 0 would make every instruction side-set
+;              level 0 into SIDESET_BASE and SIDESET_BASE+1, and the side-set channel beats
+;              OUT/SET on the same pin (docs/mvp-isa.md `### Pin writes`), holding the
+;              line low.  OUT_BASE = SET_BASE = the TX pin, OUT_COUNT = SET_COUNT = 1, so
+;              both channels only ever touch that one pin.
+;   EXECCTRL   SIDE_EN = 0, WRAP_BOTTOM = 0, WRAP_TOP = the last instruction below.
+;   CLKDIV     the 16.8 divider, derived from the SM cycles per bit the words above add up
+;              to (four for manchester_even, five for manchester).
+;
+; A TX pin has to be one of the bidirectional uio pins, 0..7, because that is where PINDIRS
+; can drive a level (docs/mvp-isa.md `### The 18 protocol pins`); Manchester is push-pull,
+; so there is no open-drain sense question here.
+;
+; ================================================================================================
+; .program manchester: 5 SM cycles per bit, chips of 3 and 2.
+;
+;   mov pins, osr ! [2]   the first chip is 1 + 2 = 3 SM cycles
+;   out pins, 1           the second chip is 1 + 0 + 1 (the `jmp`) = 2 SM cycles
+;   jmp x-- bitloop       3 + 2 = 5 SM cycles per bit, i.e. 5 ticks at CLKDIV = 1.0
+;
+; That is AN1120a's 10BASE-T rate: 5 ticks of 20 ns is a 100 ns bit time, 10 Mbit/s, the
+; profile `verif/vip/manchester.py` defaults to.  The cost is the split: a half bit is 2.5
+; ticks and these chips are 3 and 2, so each is half a tick off, which is inside the judge's
+; one-tick tolerance at CLKDIV = 1.0 and exactly on it at CLKDIV = 2.0 (5 Mbit/s).
+; ================================================================================================
+.program manchester
+
+.define DATA_BITS 8           ; one message is one byte
+.define PRE_LOW_HOLD 4        ; 1 + 4 = 5 SM cycles of level 0: one bit time
+.define IDLE_HOLD 23          ; 1 + 23 = 24 SM cycles of idle line between messages
+
+PUBLIC start:
+        set pins, 1                    ; the TX pin's level register comes out of reset at
+                                       ; 0, so it has to be told the idle level before
+                                       ; anything drives it, and in that order -- see
+                                       ; README.md for the runt edge the other order makes.
+        set pindirs, 1                 ; the pin becomes a push-pull output
+
+message:
+        pull block                     ; OSR <- the next byte from the TX FIFO, in bits
+                                       ; 7:0.  Autopull refilled the OSR at the end of the
+                                       ; last message, so in steady state this is a no-op
+                                       ; barrier; with an empty FIFO it stalls here while
+                                       ; the line is still idle, which is where a
+                                       ; transmitter waits for its host.
+        set pins, 0 [PRE_LOW_HOLD]     ; the sync preamble: falling mid-bit transition of
+                                       ; its first bit, no transition between the two
+                                       ; cells, and the first half of the second cell
+        set pins, 1                    ; rising mid-bit transition of the preamble's
+                                       ; second bit.  No delay: this instruction and the
+                                       ; `set x` below it are that cell's second half.
+        set x, (DATA_BITS - 1)         ; eight data bits: the eighth `jmp x--` falls
+                                       ; through
+
+bitloop:
+        mov pins, osr ! [2]            ; first half of the cell: ~b, and no shift, so the
+                                       ; bit is still there for the instruction below
+        out pins, 1                    ; second half: b, and the next bit arrives
+        jmp x-- bitloop                ; seven more bits, then fall through
+
+        set pins, 1 [IDLE_HOLD]        ; the line rests at the idle level, long enough for
+                                       ; the judge's minimum gap between messages (four
+                                       ; bit times) with room to spare.  A `set` and not an
+                                       ; `out`, so the OSR keeps the next word.
+        jmp message
+
+; ================================================================================================
+; .program manchester_even: 4 SM cycles per bit, chips of 2 and 2.
+;
+;   mov pins, osr ! [1]   the first chip is 1 + 1 = 2 SM cycles
+;   out pins, 1           the second chip is 1 + 0 + 1 (the `jmp`) = 2 SM cycles
+;   jmp x-- bitloop       2 + 2 = 4 SM cycles per bit, half of each exactly
+;
+; Identical to the program above except for three delay digits, and that is the whole
+; point: with equal chips the wire sits on the judge's bit grid to the tick at every CLKDIV,
+; instead of half a tick off at CLKDIV = 1.0 and a whole tick off -- the whole allowance --
+; at CLKDIV = 2.0.  The ceiling is therefore lower (12.5 Mbit/s at CLKDIV = 1.0, of which
+; the judge can only certify 6.25 Mbit/s) but the range is far wider: anything whose bit
+; period is a multiple of four ticks, so 6.25, 4.1667, 2.5, 1.25, 0.625, 0.5, 0.25, 0.1 and
+; 0.025 Mbit/s (CLKDIV = 2, 3, 5, 10, 20, 25, 50, 125, 500).
+;
+; The sync preamble's split changes with it: one bit time of level 0 is now four SM cycles,
+; so PRE_LOW_HOLD is 3, and `set pins, 1` plus `set x` are still exactly one half bit of
+; level 1 (two SM cycles) with the first data chip starting on the cell boundary.
+; ================================================================================================
+.program manchester_even
+
+.define DATA_BITS 8
+.define PRE_LOW_HOLD 3
+.define IDLE_HOLD 23
+
+PUBLIC start:
+        set pins, 1
+        set pindirs, 1
+
+message:
+        pull block
+        set pins, 0 [PRE_LOW_HOLD]
+        set pins, 1
+        set x, (DATA_BITS - 1)
+
+bitloop:
+        mov pins, osr ! [1]
+        out pins, 1
+        jmp x-- bitloop
+
+        set pins, 1 [IDLE_HOLD]
+        jmp message

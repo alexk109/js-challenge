@@ -1,0 +1,29 @@
+;
+; SPI receive-only target, mode 0 (CPOL 0, CPHA 0): bytes in on MOSI, nothing out.
+;
+; fw/spi_target answers a flash read, so its loop also pulls one TX word per byte and the host
+; must keep it fed.  A bridge source has nothing to say to the master, and an engine whose TX
+; FIFO is empty would stall (a stall loses bit phase).  This is the receive half only:
+;
+;     wait 1 gpio SCK     the capture edge (SCK rose)
+;     in pins, 1          one MOSI bit into the ISR (shift left, MSB first)
+;     wait 0 gpio SCK     the launch edge: ready for the next rise
+;
+; AUTOPUSH with PUSH_THRESH 8 pushes one RX word per byte, the byte right-justified in bits
+; 7:0 (IN_SHIFTDIR 0).  CSn is not looked at: transfers must be whole bytes, and a bit-count
+; slip would stay slipped.  Pins are set by .define (rewritten by tools/bench/bridges.py).
+;
+; Rate limit: the three instructions are 3 SM cycles per bit at CLKDIV 1 plus the T_IN = 3
+; synchroniser, so SCK half periods of 3 core cycles or more are served (checked in the tests).
+;
+.program spi_rx
+
+.define PUBLIC SCK_PIN 10
+
+.wrap_target bit
+.wrap bit_end
+bit:
+    wait 1 gpio SCK_PIN
+    in pins, 1
+bit_end:
+    wait 0 gpio SCK_PIN

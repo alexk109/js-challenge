@@ -1,0 +1,12 @@
+/* Throughput styles. Scope every selector under .v-throughput; colours only through tokens. */
+.v-throughput .tp-sec { margin: 0 0 18px; }
+.v-throughput .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.v-throughput .tp-cmp .ic { font-weight: 700; }
+.v-throughput .tp-cmp.ok .ic { color: var(--good); }
+.v-throughput .tp-cmp.mid .ic { color: var(--warn); }
+.v-throughput .tp-cmp.bad .ic { color: var(--bad); }
+.v-throughput svg .envelope { fill: var(--s1); opacity: .22; }
+.v-throughput svg .fill { fill: none; stroke: var(--s1); stroke-width: 2; }
+.v-throughput svg .buf { stroke: var(--ink-2); stroke-dasharray: 2 3; }
+.v-throughput svg .event path { fill: var(--bad); }
+.v-throughput svg .deadline line { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 5 3; }

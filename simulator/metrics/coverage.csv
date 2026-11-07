@@ -1,0 +1,503 @@
+bin,family,weight,spec,what,fuzz,fw,directed,union
+jmp.always,jmp,8,docs/mvp-isa.md:92,a JMP with condition 0 (always) was executed,14508,17752,58,32260
+jmp.always.take,jmp,9,docs/mvp-isa.md:92,JMP always was evaluated and the branch was taken,14508,17752,58,32260
+jmp.always.skip,jmp,8,docs/mvp-isa.md:261,JMP always was evaluated and the branch was not taken,0,0,0,0
+jmp.not_x,jmp,8,docs/mvp-isa.md:92,a JMP with condition 1 (not_x) was executed,2886,6270,51,9156
+jmp.not_x.take,jmp,9,docs/mvp-isa.md:92,JMP not_x was evaluated and the branch was taken,2338,4308,29,6646
+jmp.not_x.skip,jmp,8,docs/mvp-isa.md:261,JMP not_x was evaluated and the branch was not taken,548,1962,22,2510
+jmp.dec_x,jmp,8,docs/mvp-isa.md:92,a JMP with condition 2 (dec_x) was executed,1790,11499,51,13289
+jmp.dec_x.take,jmp,9,docs/mvp-isa.md:92,JMP dec_x was evaluated and the branch was taken,1064,9896,29,10960
+jmp.dec_x.skip,jmp,8,docs/mvp-isa.md:261,JMP dec_x was evaluated and the branch was not taken,726,1603,22,2329
+jmp.not_y,jmp,8,docs/mvp-isa.md:93,a JMP with condition 3 (not_y) was executed,1681,282,51,1963
+jmp.not_y.take,jmp,9,docs/mvp-isa.md:93,JMP not_y was evaluated and the branch was taken,325,57,29,382
+jmp.not_y.skip,jmp,8,docs/mvp-isa.md:261,JMP not_y was evaluated and the branch was not taken,1356,225,22,1581
+jmp.dec_y,jmp,8,docs/mvp-isa.md:93,a JMP with condition 4 (dec_y) was executed,2145,4451,51,6596
+jmp.dec_y.take,jmp,9,docs/mvp-isa.md:93,JMP dec_y was evaluated and the branch was taken,1972,3958,29,5930
+jmp.dec_y.skip,jmp,8,docs/mvp-isa.md:261,JMP dec_y was evaluated and the branch was not taken,173,493,22,666
+jmp.x_ne_y,jmp,8,docs/mvp-isa.md:93,a JMP with condition 5 (x_ne_y) was executed,2385,149791,51,152176
+jmp.x_ne_y.take,jmp,9,docs/mvp-isa.md:93,JMP x_ne_y was evaluated and the branch was taken,2168,5458,29,7626
+jmp.x_ne_y.skip,jmp,8,docs/mvp-isa.md:261,JMP x_ne_y was evaluated and the branch was not taken,217,144333,22,144550
+jmp.pin,jmp,8,docs/mvp-isa.md:93,a JMP with condition 6 (pin) was executed,1639,385,51,2024
+jmp.pin.take,jmp,9,docs/mvp-isa.md:93,JMP pin was evaluated and the branch was taken,550,154,29,704
+jmp.pin.skip,jmp,8,docs/mvp-isa.md:261,JMP pin was evaluated and the branch was not taken,1089,231,22,1320
+jmp.no_osre,jmp,8,docs/mvp-isa.md:94,a JMP with condition 7 (no_osre) was executed,2215,8234,23,10449
+jmp.no_osre.take,jmp,9,docs/mvp-isa.md:94,JMP no_osre was evaluated and the branch was taken,1640,7857,1,9497
+jmp.no_osre.skip,jmp,8,docs/mvp-isa.md:261,JMP no_osre was evaluated and the branch was not taken,575,377,22,952
+wait.gpio.pol0,wait,8,docs/mvp-isa.md:97,a WAIT with source 0 (gpio) and Pol 0 was executed,3977,11217,0,15194
+wait.gpio.pol1,wait,8,docs/mvp-isa.md:97,a WAIT with source 0 (gpio) and Pol 1 was executed,38615,15975,0,54590
+wait.pin.pol0,wait,8,docs/mvp-isa.md:97,a WAIT with source 1 (pin) and Pol 0 was executed,3119,21192,0,24311
+wait.pin.pol1,wait,8,docs/mvp-isa.md:97,a WAIT with source 1 (pin) and Pol 1 was executed,16111,281126,0,297237
+wait.irq.pol0,wait,8,docs/mvp-isa.md:98,a WAIT with source 2 (irq) and Pol 0 was executed,1790,0,9,1790
+wait.irq.pol1,wait,9,docs/mvp-isa.md:98,a WAIT with source 2 (irq) and Pol 1 was executed,31845,0,57,31845
+wait.reserved.pol0,wait,8,docs/mvp-isa.md:99,a WAIT with source 3 (reserved) and Pol 0 was executed,1570,0,0,1570
+wait.reserved.pol1,wait,8,docs/mvp-isa.md:99,a WAIT with source 3 (reserved) and Pol 1 was executed,1386,0,0,1386
+wait.pass.first_cycle,wait,8,docs/mvp-isa.md:271,a WAIT completed in the cycle it was presented (its condition already held),11538,6563,9,18101
+in.src.pins,in,9,docs/mvp-isa.md:101,an IN with source 0 (pins) was executed,2494,26670,63,29164
+in.src.x,in,9,docs/mvp-isa.md:101,an IN with source 1 (x) was executed,2429,0,0,2429
+in.src.y,in,9,docs/mvp-isa.md:101,an IN with source 2 (y) was executed,2454,0,0,2454
+in.src.null,in,9,docs/mvp-isa.md:101,an IN with source 3 (null) was executed,2826,106,0,2932
+in.src.reserved_100,in,9,docs/mvp-isa.md:101,an IN with source 4 (reserved_100) was executed,1465,0,0,1465
+in.src.reserved_101,in,9,docs/mvp-isa.md:101,an IN with source 5 (reserved_101) was executed,1636,0,0,1636
+in.src.isr,in,9,docs/mvp-isa.md:102,an IN with source 6 (isr) was executed,2403,0,0,2403
+in.src.osr,in,9,docs/mvp-isa.md:102,an IN with source 7 (osr) was executed,2210,0,0,2210
+in.width.32,in,9,docs/mvp-isa.md:52,an IN of 32 bits was executed (`00000` count),1551,106,0,1657
+in.width.partial,in,9,docs/mvp-isa.md:257,an IN of fewer than 32 bits was executed,16366,26670,63,43036
+in.shiftdir.right,in,9,docs/mvp-isa.md:274,an IN was executed with IN_SHIFTDIR = 1 (right),8579,4756,63,13335
+in.shiftdir.left,in,9,docs/mvp-isa.md:275,an IN was executed with IN_SHIFTDIR = 0 (left),9338,22020,0,31358
+out.dest.pins,out,9,docs/mvp-isa.md:104,an OUT with destination 0 (pins) was executed,1886,23618,25,25504
+out.dest.x,out,9,docs/mvp-isa.md:104,an OUT with destination 1 (x) was executed,2107,6910,0,9017
+out.dest.y,out,9,docs/mvp-isa.md:104,an OUT with destination 2 (y) was executed,2046,0,0,2046
+out.dest.null,out,9,docs/mvp-isa.md:104,an OUT with destination 3 (null) was executed,23821,1315,0,25136
+out.dest.pindirs,out,9,docs/mvp-isa.md:104,an OUT with destination 4 (pindirs) was executed,3697,3270,0,6967
+out.dest.pc,out,9,docs/mvp-isa.md:105,an OUT with destination 5 (pc) was executed,2574,0,0,2574
+out.dest.isr,out,9,docs/mvp-isa.md:105,an OUT with destination 6 (isr) was executed,1871,0,0,1871
+out.dest.exec,out,9,docs/mvp-isa.md:105,an OUT with destination 7 (exec) was executed,1727,0,0,1727
+out.width.32,out,9,docs/mvp-isa.md:52,an OUT of 32 bits was executed,22991,0,0,22991
+out.width.partial,out,9,docs/mvp-isa.md:294,an OUT of fewer than 32 bits was executed,16738,35113,25,51851
+out.shiftdir.right,out,9,docs/mvp-isa.md:294,"an OUT was executed with OUT_SHIFTDIR = 1 (right, LSB first)",19250,24178,25,43428
+out.shiftdir.left,out,9,docs/mvp-isa.md:296,an OUT was executed with OUT_SHIFTDIR = 0,20479,10935,0,31414
+out.dest.pins.out_count,out,9,docs/mvp-isa.md:299,an OUT PINS wrote more than one pin (OUT_COUNT > 1),4623,1220,0,5843
+push.iffull0.noblock,pushpull,9,docs/mvp-isa.md:315,a PUSH with IfFull = 0 and Block = 0 was executed,12456,23,97,12479
+push.iffull0.block,pushpull,9,docs/mvp-isa.md:313,a blocking PUSH with IfFull = 0 was executed,13916,350,44,14266
+push.iffull1.noblock,pushpull,9,docs/mvp-isa.md:311,a PUSH with IfFull = 1 and Block = 0 was executed,1511,0,0,1511
+push.iffull1.block,pushpull,9,docs/mvp-isa.md:313,a blocking PUSH with IfFull = 1 was executed,1880,45,0,1925
+pull.ifempty0.noblock,pushpull,9,docs/mvp-isa.md:323,a PULL with IfEmpty = 0 and Block = 0 was executed,22792,0,24,22792
+pull.ifempty0.block,pushpull,9,docs/mvp-isa.md:321,a blocking PULL with IfEmpty = 0 was executed,12623,515124,114,527747
+pull.ifempty1.noblock,pushpull,9,docs/mvp-isa.md:319,a PULL with IfEmpty = 1 and Block = 0 was executed,1531,0,0,1531
+pull.ifempty1.block,pushpull,9,docs/mvp-isa.md:321,a blocking PULL with IfEmpty = 1 was executed,1632,0,0,1632
+pull.autopull.barrier,pushpull,9,docs/mvp-isa.md:318,a PULL was skipped because autopull is on and osr_cnt == 0,15293,551,24,15844
+mov.dst.pins,mov,7,docs/mvp-isa.md:107,a MOV with destination 0 (pins) was executed,1540,3416,0,4956
+mov.dst.x,mov,7,docs/mvp-isa.md:107,a MOV with destination 1 (x) was executed,14315,149797,21,164112
+mov.dst.y,mov,7,docs/mvp-isa.md:107,a MOV with destination 2 (y) was executed,22731,24972,1083,47703
+mov.dst.reserved_011,mov,7,docs/mvp-isa.md:107,a MOV with destination 3 (reserved_011) was executed,1700,0,0,1700
+mov.dst.exec,mov,7,docs/mvp-isa.md:108,a MOV with destination 4 (exec) was executed,1773,0,0,1773
+mov.dst.pc,mov,7,docs/mvp-isa.md:108,a MOV with destination 5 (pc) was executed,3223,0,0,3223
+mov.dst.isr,mov,7,docs/mvp-isa.md:108,a MOV with destination 6 (isr) was executed,1576,95,0,1671
+mov.dst.osr,mov,7,docs/mvp-isa.md:108,a MOV with destination 7 (osr) was executed,1502,44,0,1546
+mov.op.none,mov,7,docs/mvp-isa.md:108,a MOV with Op 0 (none) was executed,36760,174884,1104,211644
+mov.op.invert,mov,7,docs/mvp-isa.md:108,a MOV with Op 1 (invert) was executed,3938,3440,0,7378
+mov.op.reverse,mov,7,docs/mvp-isa.md:109,a MOV with Op 2 (reverse) was executed,4574,0,0,4574
+mov.op.reserved_11,mov,7,docs/mvp-isa.md:109,a MOV with Op 3 (reserved_11) was executed,3088,0,0,3088
+mov.src.pins,mov,7,docs/mvp-isa.md:109,a MOV with source 0 (pins) was executed,1930,149824,0,151754
+mov.src.x,mov,7,docs/mvp-isa.md:110,a MOV with source 1 (x) was executed,2613,5458,0,8071
+mov.src.y,mov,7,docs/mvp-isa.md:110,a MOV with source 2 (y) was executed,23294,19488,788,42782
+mov.src.null,mov,7,docs/mvp-isa.md:110,a MOV with source 3 (null) was executed,13127,98,316,13225
+mov.src.reserved_100,mov,7,docs/mvp-isa.md:110,a MOV with source 4 (reserved_100) was executed,1851,0,0,1851
+mov.src.status,mov,7,docs/mvp-isa.md:110,a MOV with source 5 (status) was executed,1736,0,0,1736
+mov.src.isr,mov,7,docs/mvp-isa.md:110,a MOV with source 6 (isr) was executed,2244,40,0,2284
+mov.src.osr,mov,7,docs/mvp-isa.md:111,a MOV with source 7 (osr) was executed,1565,3416,0,4981
+mov.form.pins.none.pins,mov,3,docs/mvp-isa.md:325,"`mov pins, pins` with Op none was executed",78,0,0,78
+mov.form.pins.none.x,mov,3,docs/mvp-isa.md:325,"`mov pins, x` with Op none was executed",22,0,0,22
+mov.form.pins.none.y,mov,3,docs/mvp-isa.md:325,"`mov pins, y` with Op none was executed",50,0,0,50
+mov.form.pins.none.null,mov,3,docs/mvp-isa.md:325,"`mov pins, null` with Op none was executed",32,0,0,32
+mov.form.pins.none.status,mov,3,docs/mvp-isa.md:325,"`mov pins, status` with Op none was executed",27,0,0,27
+mov.form.pins.none.isr,mov,3,docs/mvp-isa.md:325,"`mov pins, isr` with Op none was executed",40,0,0,40
+mov.form.pins.none.osr,mov,3,docs/mvp-isa.md:325,"`mov pins, osr` with Op none was executed",22,16,0,38
+mov.form.pins.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov pins, pins` with Op invert was executed",37,0,0,37
+mov.form.pins.invert.x,mov,3,docs/mvp-isa.md:325,"`mov pins, x` with Op invert was executed",49,0,0,49
+mov.form.pins.invert.y,mov,3,docs/mvp-isa.md:325,"`mov pins, y` with Op invert was executed",91,0,0,91
+mov.form.pins.invert.null,mov,3,docs/mvp-isa.md:325,"`mov pins, null` with Op invert was executed",37,0,0,37
+mov.form.pins.invert.status,mov,3,docs/mvp-isa.md:325,"`mov pins, status` with Op invert was executed",48,0,0,48
+mov.form.pins.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov pins, isr` with Op invert was executed",60,0,0,60
+mov.form.pins.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov pins, osr` with Op invert was executed",53,3400,0,3453
+mov.form.pins.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov pins, pins` with Op reverse was executed",31,0,0,31
+mov.form.pins.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov pins, x` with Op reverse was executed",68,0,0,68
+mov.form.pins.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov pins, y` with Op reverse was executed",38,0,0,38
+mov.form.pins.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov pins, null` with Op reverse was executed",30,0,0,30
+mov.form.pins.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov pins, status` with Op reverse was executed",61,0,0,61
+mov.form.pins.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov pins, isr` with Op reverse was executed",58,0,0,58
+mov.form.pins.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov pins, osr` with Op reverse was executed",66,0,0,66
+mov.form.x.none.pins,mov,3,docs/mvp-isa.md:325,"`mov x, pins` with Op none was executed",95,149797,0,149892
+mov.form.x.none.x,mov,3,docs/mvp-isa.md:325,"`mov x, x` with Op none was executed",231,0,0,231
+mov.form.x.none.y,mov,3,docs/mvp-isa.md:325,"`mov x, y` with Op none was executed",160,0,0,160
+mov.form.x.none.null,mov,3,docs/mvp-isa.md:325,"`mov x, null` with Op none was executed",11137,0,21,11137
+mov.form.x.none.status,mov,3,docs/mvp-isa.md:325,"`mov x, status` with Op none was executed",112,0,0,112
+mov.form.x.none.isr,mov,3,docs/mvp-isa.md:325,"`mov x, isr` with Op none was executed",92,0,0,92
+mov.form.x.none.osr,mov,3,docs/mvp-isa.md:325,"`mov x, osr` with Op none was executed",86,0,0,86
+mov.form.x.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov x, pins` with Op invert was executed",48,0,0,48
+mov.form.x.invert.x,mov,3,docs/mvp-isa.md:325,"`mov x, x` with Op invert was executed",206,0,0,206
+mov.form.x.invert.y,mov,3,docs/mvp-isa.md:325,"`mov x, y` with Op invert was executed",216,0,0,216
+mov.form.x.invert.null,mov,3,docs/mvp-isa.md:325,"`mov x, null` with Op invert was executed",142,0,0,142
+mov.form.x.invert.status,mov,3,docs/mvp-isa.md:325,"`mov x, status` with Op invert was executed",85,0,0,85
+mov.form.x.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov x, isr` with Op invert was executed",168,0,0,168
+mov.form.x.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov x, osr` with Op invert was executed",116,0,0,116
+mov.form.x.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov x, pins` with Op reverse was executed",110,0,0,110
+mov.form.x.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov x, x` with Op reverse was executed",268,0,0,268
+mov.form.x.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov x, y` with Op reverse was executed",209,0,0,209
+mov.form.x.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov x, null` with Op reverse was executed",133,0,0,133
+mov.form.x.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov x, status` with Op reverse was executed",92,0,0,92
+mov.form.x.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov x, isr` with Op reverse was executed",72,0,0,72
+mov.form.x.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov x, osr` with Op reverse was executed",69,0,0,69
+mov.form.y.none.pins,mov,3,docs/mvp-isa.md:325,"`mov y, pins` with Op none was executed",126,27,0,153
+mov.form.y.none.x,mov,3,docs/mvp-isa.md:325,"`mov y, x` with Op none was executed",52,5457,0,5509
+mov.form.y.none.y,mov,3,docs/mvp-isa.md:325,"`mov y, y` with Op none was executed",21206,19488,788,40694
+mov.form.y.none.null,mov,3,docs/mvp-isa.md:325,"`mov y, null` with Op none was executed",20,0,295,20
+mov.form.y.none.status,mov,3,docs/mvp-isa.md:325,"`mov y, status` with Op none was executed",34,0,0,34
+mov.form.y.none.isr,mov,3,docs/mvp-isa.md:325,"`mov y, isr` with Op none was executed",53,0,0,53
+mov.form.y.none.osr,mov,3,docs/mvp-isa.md:325,"`mov y, osr` with Op none was executed",35,0,0,35
+mov.form.y.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov y, pins` with Op invert was executed",44,0,0,44
+mov.form.y.invert.x,mov,3,docs/mvp-isa.md:325,"`mov y, x` with Op invert was executed",52,0,0,52
+mov.form.y.invert.y,mov,3,docs/mvp-isa.md:325,"`mov y, y` with Op invert was executed",27,0,0,27
+mov.form.y.invert.null,mov,3,docs/mvp-isa.md:325,"`mov y, null` with Op invert was executed",20,0,0,20
+mov.form.y.invert.status,mov,3,docs/mvp-isa.md:325,"`mov y, status` with Op invert was executed",39,0,0,39
+mov.form.y.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov y, isr` with Op invert was executed",76,0,0,76
+mov.form.y.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov y, osr` with Op invert was executed",20,0,0,20
+mov.form.y.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov y, pins` with Op reverse was executed",94,0,0,94
+mov.form.y.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov y, x` with Op reverse was executed",19,0,0,19
+mov.form.y.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov y, y` with Op reverse was executed",44,0,0,44
+mov.form.y.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov y, null` with Op reverse was executed",36,0,0,36
+mov.form.y.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov y, status` with Op reverse was executed",29,0,0,29
+mov.form.y.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov y, isr` with Op reverse was executed",75,0,0,75
+mov.form.y.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov y, osr` with Op reverse was executed",86,0,0,86
+mov.form.exec.none.pins,mov,3,docs/mvp-isa.md:325,"`mov exec, pins` with Op none was executed",64,0,0,64
+mov.form.exec.none.x,mov,3,docs/mvp-isa.md:325,"`mov exec, x` with Op none was executed",60,0,0,60
+mov.form.exec.none.y,mov,3,docs/mvp-isa.md:325,"`mov exec, y` with Op none was executed",53,0,0,53
+mov.form.exec.none.null,mov,3,docs/mvp-isa.md:325,"`mov exec, null` with Op none was executed",77,0,0,77
+mov.form.exec.none.status,mov,3,docs/mvp-isa.md:325,"`mov exec, status` with Op none was executed",44,0,0,44
+mov.form.exec.none.isr,mov,3,docs/mvp-isa.md:325,"`mov exec, isr` with Op none was executed",82,0,0,82
+mov.form.exec.none.osr,mov,3,docs/mvp-isa.md:325,"`mov exec, osr` with Op none was executed",37,0,0,37
+mov.form.exec.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov exec, pins` with Op invert was executed",39,0,0,39
+mov.form.exec.invert.x,mov,3,docs/mvp-isa.md:325,"`mov exec, x` with Op invert was executed",59,0,0,59
+mov.form.exec.invert.y,mov,3,docs/mvp-isa.md:325,"`mov exec, y` with Op invert was executed",28,0,0,28
+mov.form.exec.invert.null,mov,3,docs/mvp-isa.md:325,"`mov exec, null` with Op invert was executed",42,0,0,42
+mov.form.exec.invert.status,mov,3,docs/mvp-isa.md:325,"`mov exec, status` with Op invert was executed",150,0,0,150
+mov.form.exec.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov exec, isr` with Op invert was executed",38,0,0,38
+mov.form.exec.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov exec, osr` with Op invert was executed",19,0,0,19
+mov.form.exec.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov exec, pins` with Op reverse was executed",30,0,0,30
+mov.form.exec.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov exec, x` with Op reverse was executed",86,0,0,86
+mov.form.exec.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov exec, y` with Op reverse was executed",100,0,0,100
+mov.form.exec.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov exec, null` with Op reverse was executed",43,0,0,43
+mov.form.exec.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov exec, status` with Op reverse was executed",89,0,0,89
+mov.form.exec.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov exec, isr` with Op reverse was executed",43,0,0,43
+mov.form.exec.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov exec, osr` with Op reverse was executed",37,0,0,37
+mov.form.pc.none.pins,mov,3,docs/mvp-isa.md:325,"`mov pc, pins` with Op none was executed",142,0,0,142
+mov.form.pc.none.x,mov,3,docs/mvp-isa.md:325,"`mov pc, x` with Op none was executed",177,0,0,177
+mov.form.pc.none.y,mov,3,docs/mvp-isa.md:325,"`mov pc, y` with Op none was executed",60,0,0,60
+mov.form.pc.none.null,mov,3,docs/mvp-isa.md:325,"`mov pc, null` with Op none was executed",307,0,0,307
+mov.form.pc.none.status,mov,3,docs/mvp-isa.md:325,"`mov pc, status` with Op none was executed",44,0,0,44
+mov.form.pc.none.isr,mov,3,docs/mvp-isa.md:325,"`mov pc, isr` with Op none was executed",238,0,0,238
+mov.form.pc.none.osr,mov,3,docs/mvp-isa.md:325,"`mov pc, osr` with Op none was executed",66,0,0,66
+mov.form.pc.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov pc, pins` with Op invert was executed",51,0,0,51
+mov.form.pc.invert.x,mov,3,docs/mvp-isa.md:325,"`mov pc, x` with Op invert was executed",55,0,0,55
+mov.form.pc.invert.y,mov,3,docs/mvp-isa.md:325,"`mov pc, y` with Op invert was executed",49,0,0,49
+mov.form.pc.invert.null,mov,3,docs/mvp-isa.md:325,"`mov pc, null` with Op invert was executed",266,0,0,266
+mov.form.pc.invert.status,mov,3,docs/mvp-isa.md:325,"`mov pc, status` with Op invert was executed",60,0,0,60
+mov.form.pc.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov pc, isr` with Op invert was executed",286,0,0,286
+mov.form.pc.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov pc, osr` with Op invert was executed",46,0,0,46
+mov.form.pc.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov pc, pins` with Op reverse was executed",95,0,0,95
+mov.form.pc.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov pc, x` with Op reverse was executed",196,0,0,196
+mov.form.pc.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov pc, y` with Op reverse was executed",255,0,0,255
+mov.form.pc.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov pc, null` with Op reverse was executed",67,0,0,67
+mov.form.pc.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov pc, status` with Op reverse was executed",68,0,0,68
+mov.form.pc.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov pc, isr` with Op reverse was executed",53,0,0,53
+mov.form.pc.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov pc, osr` with Op reverse was executed",76,0,0,76
+mov.form.isr.none.pins,mov,3,docs/mvp-isa.md:325,"`mov isr, pins` with Op none was executed",65,0,0,65
+mov.form.isr.none.x,mov,3,docs/mvp-isa.md:325,"`mov isr, x` with Op none was executed",58,1,0,59
+mov.form.isr.none.y,mov,3,docs/mvp-isa.md:325,"`mov isr, y` with Op none was executed",27,0,0,27
+mov.form.isr.none.null,mov,3,docs/mvp-isa.md:325,"`mov isr, null` with Op none was executed",32,54,0,86
+mov.form.isr.none.status,mov,3,docs/mvp-isa.md:325,"`mov isr, status` with Op none was executed",52,0,0,52
+mov.form.isr.none.isr,mov,3,docs/mvp-isa.md:325,"`mov isr, isr` with Op none was executed",53,0,0,53
+mov.form.isr.none.osr,mov,3,docs/mvp-isa.md:325,"`mov isr, osr` with Op none was executed",19,0,0,19
+mov.form.isr.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov isr, pins` with Op invert was executed",25,0,0,25
+mov.form.isr.invert.x,mov,3,docs/mvp-isa.md:325,"`mov isr, x` with Op invert was executed",63,0,0,63
+mov.form.isr.invert.y,mov,3,docs/mvp-isa.md:325,"`mov isr, y` with Op invert was executed",30,0,0,30
+mov.form.isr.invert.null,mov,3,docs/mvp-isa.md:325,"`mov isr, null` with Op invert was executed",73,0,0,73
+mov.form.isr.invert.status,mov,3,docs/mvp-isa.md:325,"`mov isr, status` with Op invert was executed",17,0,0,17
+mov.form.isr.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov isr, isr` with Op invert was executed",59,40,0,99
+mov.form.isr.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov isr, osr` with Op invert was executed",14,0,0,14
+mov.form.isr.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov isr, pins` with Op reverse was executed",59,0,0,59
+mov.form.isr.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov isr, x` with Op reverse was executed",71,0,0,71
+mov.form.isr.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov isr, y` with Op reverse was executed",35,0,0,35
+mov.form.isr.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov isr, null` with Op reverse was executed",26,0,0,26
+mov.form.isr.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov isr, status` with Op reverse was executed",82,0,0,82
+mov.form.isr.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov isr, isr` with Op reverse was executed",25,0,0,25
+mov.form.isr.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov isr, osr` with Op reverse was executed",53,0,0,53
+mov.form.osr.none.pins,mov,3,docs/mvp-isa.md:325,"`mov osr, pins` with Op none was executed",59,0,0,59
+mov.form.osr.none.x,mov,3,docs/mvp-isa.md:325,"`mov osr, x` with Op none was executed",74,0,0,74
+mov.form.osr.none.y,mov,3,docs/mvp-isa.md:325,"`mov osr, y` with Op none was executed",46,0,0,46
+mov.form.osr.none.null,mov,3,docs/mvp-isa.md:325,"`mov osr, null` with Op none was executed",21,44,0,65
+mov.form.osr.none.status,mov,3,docs/mvp-isa.md:325,"`mov osr, status` with Op none was executed",50,0,0,50
+mov.form.osr.none.isr,mov,3,docs/mvp-isa.md:325,"`mov osr, isr` with Op none was executed",47,0,0,47
+mov.form.osr.none.osr,mov,3,docs/mvp-isa.md:325,"`mov osr, osr` with Op none was executed",39,0,0,39
+mov.form.osr.invert.pins,mov,3,docs/mvp-isa.md:325,"`mov osr, pins` with Op invert was executed",24,0,0,24
+mov.form.osr.invert.x,mov,3,docs/mvp-isa.md:325,"`mov osr, x` with Op invert was executed",55,0,0,55
+mov.form.osr.invert.y,mov,3,docs/mvp-isa.md:325,"`mov osr, y` with Op invert was executed",31,0,0,31
+mov.form.osr.invert.null,mov,3,docs/mvp-isa.md:325,"`mov osr, null` with Op invert was executed",27,0,0,27
+mov.form.osr.invert.status,mov,3,docs/mvp-isa.md:325,"`mov osr, status` with Op invert was executed",18,0,0,18
+mov.form.osr.invert.isr,mov,3,docs/mvp-isa.md:325,"`mov osr, isr` with Op invert was executed",24,0,0,24
+mov.form.osr.invert.osr,mov,3,docs/mvp-isa.md:325,"`mov osr, osr` with Op invert was executed",47,0,0,47
+mov.form.osr.reverse.pins,mov,3,docs/mvp-isa.md:325,"`mov osr, pins` with Op reverse was executed",64,0,0,64
+mov.form.osr.reverse.x,mov,3,docs/mvp-isa.md:325,"`mov osr, x` with Op reverse was executed",39,0,0,39
+mov.form.osr.reverse.y,mov,3,docs/mvp-isa.md:325,"`mov osr, y` with Op reverse was executed",46,0,0,46
+mov.form.osr.reverse.null,mov,3,docs/mvp-isa.md:325,"`mov osr, null` with Op reverse was executed",61,0,0,61
+mov.form.osr.reverse.status,mov,3,docs/mvp-isa.md:325,"`mov osr, status` with Op reverse was executed",37,0,0,37
+mov.form.osr.reverse.isr,mov,3,docs/mvp-isa.md:325,"`mov osr, isr` with Op reverse was executed",38,0,0,38
+mov.form.osr.reverse.osr,mov,3,docs/mvp-isa.md:325,"`mov osr, osr` with Op reverse was executed",42,0,0,42
+mov.status.tx,mov,7,docs/mvp-isa.md:327,"a `mov ..., status` was executed with STATUS_SEL = 0 (the TX level)",893,0,0,893
+mov.status.rx,mov,7,docs/mvp-isa.md:327,"a `mov ..., status` was executed with STATUS_SEL = 1 (the RX level)",843,0,0,843
+set.dst.pins,set,7,docs/mvp-isa.md:113,a SET with destination 0 (pins) was executed,12421,5865,54,18286
+set.dst.x,set,7,docs/mvp-isa.md:113,a SET with destination 1 (x) was executed,1611,1100,458,2711
+set.dst.y,set,7,docs/mvp-isa.md:113,a SET with destination 2 (y) was executed,1685,555,364,2240
+set.dst.reserved_011,set,2,docs/mvp-isa.md:113,a SET with destination 3 (reserved_011) was executed,1670,0,0,1670
+set.dst.pindirs,set,7,docs/mvp-isa.md:113,a SET with destination 4 (pindirs) was executed,12735,5456,54,18191
+set.dst.reserved_101,set,2,docs/mvp-isa.md:114,a SET with destination 5 (reserved_101) was executed,1648,0,0,1648
+set.dst.reserved_110,set,2,docs/mvp-isa.md:114,a SET with destination 6 (reserved_110) was executed,1824,0,0,1824
+set.dst.reserved_111,set,2,docs/mvp-isa.md:114,a SET with destination 7 (reserved_111) was executed,1793,0,0,1793
+set.pins.count_gt5,set,7,docs/mvp-isa.md:341,a SET PINS ran with SET_COUNT = 6 or 7 (the MVP writes zeros to the extra pins),4919,0,0,4919
+irq_op.nop,irq_op,4,docs/mvp-isa.md:123,an IRQ instruction (opcode 110) was executed and did nothing,12876,0,13,12876
+irq_op.with_sideset,irq_op,6,docs/mvp-isa.md:124,an IRQ instruction side-set on the same cycle,10075,0,13,10075
+delay.zero,delay,6,docs/mvp-isa.md:60,an instruction with delay = 0 was executed,266441,1211342,2849,1477783
+delay.mid,delay,6,docs/mvp-isa.md:61,"an instruction with a non-zero, non-maximal delay was executed",54459,79632,13,134091
+delay.max,delay,6,docs/mvp-isa.md:61,an instruction with the largest delay its SIDESET_COUNT allows was executed,29372,5931,5,35303
+delay.after_stall,delay,10,docs/mvp-isa.md:361,a blocking instruction's delay ran after its stall finished,109,0,0,109
+sideset.enabled,sideset,7,docs/mvp-isa.md:62,a side-set happened with SIDE_EN = 1 and its enable bit set,21428,130,51,21558
+sideset.no_enable,sideset,7,docs/mvp-isa.md:64,a side-set happened with SIDE_EN = 0 (every instruction side-sets),160354,69881,28,230235
+sideset.suppressed,sideset,7,docs/mvp-isa.md:63,"an instruction with SIDE_EN = 1 ran with its enable bit clear, so it did not side-set",117590,46262,63,163852
+sideset.level,sideset,7,docs/mvp-isa.md:67,a side-set wrote pin levels (SIDE_PINDIR = 0),126633,55042,51,181675
+sideset.pindir,sideset,7,docs/mvp-isa.md:67,a side-set wrote pin directions (SIDE_PINDIR = 1),55149,14969,28,70118
+sideset.after_stall,sideset,10,docs/mvp-isa.md:362,a stalled instruction wrote its side-set again on a later cycle,10703,0,0,10703
+stall.wait,stall,10,docs/mvp-isa.md:352,a WAIT stalled (its condition was false),86875,322947,57,409822
+stall.in.autopush,stall,10,docs/mvp-isa.md:353,an IN stalled because its result reached the autopush threshold with the RX FIFO full,3264,11624,54,14888
+stall.push.block,stall,10,docs/mvp-isa.md:353,a blocking PUSH stalled on a full RX FIFO,2017,169,44,2186
+stall.pull.block,stall,10,docs/mvp-isa.md:354,a blocking PULL stalled on an empty TX FIFO,897,513842,113,514739
+stall.out.autopull,stall,10,docs/mvp-isa.md:355,an OUT with autopull stalled because osr_cnt had reached PULL_THRESH,5002,8725,1,13727
+stall.latch,stall,10,docs/mvp-isa.md:356,an EXEC'd or host-forced instruction stalled and stayed in the latch (EXEC_STALLED),21337,0,0,21337
+stall.push.noblock_drop,stall,8,docs/mvp-isa.md:314,a non-blocking PUSH found the RX FIFO full and dropped ISR,554,0,81,554
+autopush.threshold.equal,autothresh,9,docs/mvp-isa.md:280,an IN autopushed on the cycle cnt' landed exactly on PUSH_THRESH,1061,12830,54,13891
+autopush.threshold.past,autothresh,9,docs/mvp-isa.md:280,an IN autopushed with cnt' already past PUSH_THRESH (the threshold was stepped over),5014,0,0,5014
+autopush.stall.atomic,autothresh,10,docs/mvp-isa.md:285,an IN that stalled on autopush changed nothing and re-sampled its source,3264,11624,54,14888
+autopull.threshold.equal,autothresh,9,docs/mvp-isa.md:307,an OUT's end-of-instruction autopull fired with osr_cnt exactly on PULL_THRESH,3942,1391,0,5333
+autopull.threshold.past,autothresh,9,docs/mvp-isa.md:307,an OUT's end-of-instruction autopull fired with osr_cnt already past PULL_THRESH,7212,0,0,7212
+autopull.background,autothresh,8,docs/mvp-isa.md:248,the background autopull popped the TX FIFO on a non-OUT cycle,12379,178,1,12557
+autopull.background.threshold.equal,autothresh,9,docs/mvp-isa.md:249,a background autopull fired with osr_cnt exactly on PULL_THRESH,4654,89,1,4743
+autopull.background.threshold.past,autothresh,9,docs/mvp-isa.md:249,a background autopull fired with osr_cnt already past PULL_THRESH,7725,89,0,7814
+autopull.background.delay_cycle,autothresh,9,docs/mvp-isa.md:251,the background autopull popped the TX FIFO on a delay cycle,324,0,0,324
+autopull.stall.refill,autothresh,10,docs/mvp-isa.md:289,a stalling OUT with autopull refilled the OSR from the TX FIFO in the same cycle,2351,1,1,2352
+fifo.e0.tx.empty,fifo,8,docs/mvp-regmap.md:175,engine 0's TX FIFO was observed empty,3307,3382,49,6689
+fifo.e0.tx.full,fifo,8,docs/mvp-regmap.md:176,engine 0's TX FIFO was observed full (4 words),71014,1223,0,72237
+fifo.e0.rx.empty,fifo,8,docs/mvp-regmap.md:177,engine 0's RX FIFO was observed empty,89512,6359,51,95871
+fifo.e0.rx.full,fifo,8,docs/mvp-regmap.md:178,engine 0's RX FIFO was observed full (4 words),2115,3,4,2118
+fifo.e0.tx.over,fifo,8,docs/mvp-regmap.md:206,the host pushed into a full TX FIFO of engine 0 and the word was dropped (TXOVER),10696,0,0,10696
+fifo.e0.rx.under,fifo,8,docs/mvp-regmap.md:210,the host read an empty RX FIFO of engine 0 and got 0 (RXUNDER),10444,0,0,10444
+fifo.e1.tx.empty,fifo,8,docs/mvp-regmap.md:175,engine 1's TX FIFO was observed empty,3647,7608,67,11255
+fifo.e1.tx.full,fifo,8,docs/mvp-regmap.md:176,engine 1's TX FIFO was observed full (4 words),71868,75,0,71943
+fifo.e1.rx.empty,fifo,8,docs/mvp-regmap.md:177,engine 1's RX FIFO was observed empty,89292,7794,67,97086
+fifo.e1.rx.full,fifo,8,docs/mvp-regmap.md:178,engine 1's RX FIFO was observed full (4 words),2160,0,0,2160
+fifo.e1.tx.over,fifo,8,docs/mvp-regmap.md:206,the host pushed into a full TX FIFO of engine 1 and the word was dropped (TXOVER),10823,0,0,10823
+fifo.e1.rx.under,fifo,8,docs/mvp-regmap.md:210,the host read an empty RX FIFO of engine 1 and got 0 (RXUNDER),10304,0,0,10304
+fifo.join.absent,fifo,6,docs/mvp-isa.md:566,FJOIN was set in SHIFTCTRL (or a burst was attempted) and no joining happened: the MVP has none and both FIFOs stayed 4 deep,785,0,2,785
+divider.integer,divider,8,docs/mvp-isa.md:445,the divider reloaded with FRAC = 0 (an integer period),473418,27685881,8299,28159299
+divider.fractional,divider,8,docs/mvp-isa.md:445,the divider reloaded with FRAC != 0 (a fractional period),186665,530314,424,716979
+divider.fractional.carry,divider,9,docs/mvp-isa.md:445,the fractional accumulator wrapped and lengthened the period by one core cycle,77973,90386,168,168359
+divider.int_zero,divider,8,docs/mvp-isa.md:447,the divider ran with INT = 0 (65536 core cycles per SM cycle),5897,0,2,5897
+divider.restart,divider,9,docs/mvp-isa.md:444,"a CLKDIV_RESTART reset the divider phase (en = 0 in h+1, 1 in h+2)",34756,396,76,35152
+conflict.level,conflict,9,docs/mvp-isa.md:554,both engines wrote the level of the same pin in the same core cycle,783,0,18,783
+conflict.direction,conflict,9,docs/mvp-isa.md:555,both engines wrote the direction of the same pin in the same core cycle,185,0,18,185
+conflict.sideset_beats_out,conflict,9,docs/mvp-isa.md:399,one engine wrote the same pin through side-set and through OUT/SET in one cycle,5844,281,0,6125
+conflict.cross_register,conflict,9,docs/mvp-isa.md:556,engine 0 wrote a pin's level and engine 1 its direction in the same cycle,764,0,18,764
+irqline.irq0.set,irqline,9,docs/mvp-regmap.md:106,IRQ0's output went low-to-high (rx_valid asserted),1290,1433,5,2723
+irqline.irq0.clear,irqline,9,docs/mvp-regmap.md:106,IRQ0's output went high-to-low (rx_valid released),1233,1418,1,2651
+irqline.irq1.set,irqline,9,docs/mvp-regmap.md:107,IRQ1's output went low-to-high (tx_ready asserted),1373,1520,38,2893
+irqline.irq1.clear,irqline,9,docs/mvp-regmap.md:107,IRQ1's output went high-to-low (tx_ready released),1314,1121,1,2435
+irqline.irq0.from_intr,irqline,9,docs/mvp-regmap.md:108,IRQ0 was asserted by a FIFO condition through INTR & INTE (not by INTF),987,1433,4,2420
+irqline.irq0.from_intf,irqline,9,docs/mvp-regmap.md:253,IRQ0 was asserted by a host write to IRQ0_INTF,303,0,1,303
+irqline.irq1.from_intr,irqline,9,docs/mvp-regmap.md:108,IRQ1 was asserted by a FIFO condition through INTR & INTE (not by INTF),1098,1520,38,2618
+irqline.irq1.from_intf,irqline,9,docs/mvp-regmap.md:253,IRQ1 was asserted by a host write to IRQ1_INTF,275,0,0,275
+irq.reg.inte.write,irqline,9,docs/mvp-regmap.md:251,the host wrote an INTE register,17858,0,2,17858
+irq.reg.intf.set,irqline,9,docs/mvp-regmap.md:253,the host set an INTF flag (write 1 to a flag that was 0),12383,0,1,12383
+irq.reg.intf.w1c,irqline,9,docs/mvp-regmap.md:125,the host cleared an INTF flag that was set,12110,0,1,12110
+irq.reg.ints.read,irqline,9,docs/mvp-regmap.md:254,the host read an INTS register,1597,0,1,1597
+reg.read.ctrl,reg,6,docs/mvp-regmap.md:162,the host read word address 0x00 (ctrl),787,502,0,1289
+reg.write.ctrl,reg,6,docs/mvp-regmap.md:162,the host wrote word address 0x00 (ctrl),34564,824,38,35388
+reg.read.fstat,reg,6,docs/mvp-regmap.md:171,the host read word address 0x01 (fstat),771,75592,0,76363
+reg.write.fstat,reg,6,docs/mvp-regmap.md:171,the host wrote word address 0x01 (fstat),369,0,0,369
+reg.read.fdebug,reg,6,docs/mvp-regmap.md:182,the host read word address 0x02 (fdebug),761,101,0,862
+reg.write.fdebug,reg,6,docs/mvp-regmap.md:182,the host wrote word address 0x02 (fdebug),34310,73,1,34383
+reg.read.flevel,reg,6,docs/mvp-regmap.md:193,the host read word address 0x03 (flevel),777,2216362,0,2217139
+reg.write.flevel,reg,6,docs/mvp-regmap.md:193,the host wrote word address 0x03 (flevel),354,0,0,354
+reg.read.txf0,reg,6,docs/mvp-regmap.md:204,the host read word address 0x04 (txf0),757,0,0,757
+reg.write.txf0,reg,6,docs/mvp-regmap.md:204,the host wrote word address 0x04 (txf0),62639,2174,18,64813
+reg.read.txf1,reg,6,docs/mvp-regmap.md:204,the host read word address 0x05 (txf1),793,0,0,793
+reg.write.txf1,reg,6,docs/mvp-regmap.md:204,the host wrote word address 0x05 (txf1),62445,136,0,62581
+reg.read.rxf0,reg,6,docs/mvp-regmap.md:208,the host read word address 0x08 (rxf0),46030,1402,0,47432
+reg.write.rxf0,reg,6,docs/mvp-regmap.md:208,the host wrote word address 0x08 (rxf0),364,0,0,364
+reg.read.rxf1,reg,6,docs/mvp-regmap.md:208,the host read word address 0x09 (rxf1),45901,46,0,45947
+reg.write.rxf1,reg,6,docs/mvp-regmap.md:208,the host wrote word address 0x09 (rxf1),369,0,0,369
+reg.read.dbg_padout,reg,6,docs/mvp-regmap.md:213,the host read word address 0x0f (dbg_padout),824,43,0,867
+reg.write.dbg_padout,reg,6,docs/mvp-regmap.md:213,the host wrote word address 0x0f (dbg_padout),356,0,0,356
+reg.read.dbg_padoe,reg,6,docs/mvp-regmap.md:216,the host read word address 0x10 (dbg_padoe),820,43,0,863
+reg.write.dbg_padoe,reg,6,docs/mvp-regmap.md:216,the host wrote word address 0x10 (dbg_padoe),354,0,0,354
+reg.read.dbg_cfginfo,reg,6,docs/mvp-regmap.md:219,the host read word address 0x11 (dbg_cfginfo),818,38,0,856
+reg.write.dbg_cfginfo,reg,6,docs/mvp-regmap.md:219,the host wrote word address 0x11 (dbg_cfginfo),369,0,0,369
+reg.read.intr,reg,6,docs/mvp-regmap.md:243,the host read word address 0x4a (intr),837,0,0,837
+reg.write.intr,reg,6,docs/mvp-regmap.md:243,the host wrote word address 0x4a (intr),356,0,0,356
+reg.read.irq0_inte,reg,6,docs/mvp-regmap.md:251,the host read word address 0x4b (irq0_inte),790,0,0,790
+reg.write.irq0_inte,reg,6,docs/mvp-regmap.md:251,the host wrote word address 0x4b (irq0_inte),8811,0,1,8811
+reg.read.irq0_intf,reg,6,docs/mvp-regmap.md:253,the host read word address 0x4c (irq0_intf),801,0,0,801
+reg.write.irq0_intf,reg,6,docs/mvp-regmap.md:253,the host wrote word address 0x4c (irq0_intf),8957,0,2,8957
+reg.read.irq0_ints,reg,6,docs/mvp-regmap.md:254,the host read word address 0x4d (irq0_ints),799,0,1,799
+reg.write.irq0_ints,reg,6,docs/mvp-regmap.md:254,the host wrote word address 0x4d (irq0_ints),389,0,0,389
+reg.read.irq1_inte,reg,6,docs/mvp-regmap.md:251,the host read word address 0x4e (irq1_inte),812,0,0,812
+reg.write.irq1_inte,reg,6,docs/mvp-regmap.md:251,the host wrote word address 0x4e (irq1_inte),9047,0,1,9047
+reg.read.irq1_intf,reg,6,docs/mvp-regmap.md:253,the host read word address 0x4f (irq1_intf),777,0,0,777
+reg.write.irq1_intf,reg,6,docs/mvp-regmap.md:253,the host wrote word address 0x4f (irq1_intf),8868,0,0,8868
+reg.read.irq1_ints,reg,6,docs/mvp-regmap.md:254,the host read word address 0x50 (irq1_ints),798,0,0,798
+reg.write.irq1_ints,reg,6,docs/mvp-regmap.md:254,the host wrote word address 0x50 (irq1_ints),362,0,0,362
+reg.write.imem0[0],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 0,1527,375,39,1902
+reg.read.imem0[0],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 0 (returns 0),790,0,0,790
+reg.write.imem0[1],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 1,1580,375,26,1955
+reg.read.imem0[1],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 1 (returns 0),771,0,0,771
+reg.write.imem0[2],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 2,1602,375,20,1977
+reg.read.imem0[2],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 2 (returns 0),788,0,0,788
+reg.write.imem0[3],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 3,1558,375,19,1933
+reg.read.imem0[3],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 3 (returns 0),806,0,0,806
+reg.write.imem0[4],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 4,1627,375,3,2002
+reg.read.imem0[4],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 4 (returns 0),816,0,0,816
+reg.write.imem0[5],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 5,1624,375,2,1999
+reg.read.imem0[5],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 5 (returns 0),836,0,0,836
+reg.write.imem0[6],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 6,1541,375,1,1916
+reg.read.imem0[6],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 6 (returns 0),784,0,0,784
+reg.write.imem0[7],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 7,1542,343,0,1885
+reg.read.imem0[7],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 7 (returns 0),747,0,0,747
+reg.write.imem0[8],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 8,1614,316,0,1930
+reg.read.imem0[8],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 8 (returns 0),749,0,0,749
+reg.write.imem0[9],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 9,1610,287,0,1897
+reg.read.imem0[9],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 9 (returns 0),788,0,0,788
+reg.write.imem0[10],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 10,1619,261,0,1880
+reg.read.imem0[10],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 10 (returns 0),792,0,0,792
+reg.write.imem0[11],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 11,1585,176,0,1761
+reg.read.imem0[11],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 11 (returns 0),772,0,0,772
+reg.write.imem0[12],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 12,1576,160,0,1736
+reg.read.imem0[12],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 12 (returns 0),808,0,0,808
+reg.write.imem0[13],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 13,1542,160,0,1702
+reg.read.imem0[13],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 13 (returns 0),792,0,0,792
+reg.write.imem0[14],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 14,1628,160,0,1788
+reg.read.imem0[14],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 14 (returns 0),774,0,0,774
+reg.write.imem0[15],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 15,1622,160,0,1782
+reg.read.imem0[15],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 15 (returns 0),788,0,0,788
+reg.write.imem0[16],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 16,1580,160,0,1740
+reg.read.imem0[16],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 16 (returns 0),787,0,0,787
+reg.write.imem0[17],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 17,1644,152,0,1796
+reg.read.imem0[17],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 17 (returns 0),802,0,0,802
+reg.write.imem0[18],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 18,1570,152,0,1722
+reg.read.imem0[18],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 18 (returns 0),778,0,0,778
+reg.write.imem0[19],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 19,1578,152,0,1730
+reg.read.imem0[19],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 19 (returns 0),780,0,0,780
+reg.write.imem0[20],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 20,1586,152,0,1738
+reg.read.imem0[20],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 20 (returns 0),820,0,0,820
+reg.write.imem0[21],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 21,1636,152,0,1788
+reg.read.imem0[21],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 21 (returns 0),846,0,0,846
+reg.write.imem0[22],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 22,1607,107,0,1714
+reg.read.imem0[22],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 22 (returns 0),827,0,0,827
+reg.write.imem0[23],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 23,1616,107,0,1723
+reg.read.imem0[23],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 23 (returns 0),784,0,0,784
+reg.write.imem0[24],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 24,1615,88,0,1703
+reg.read.imem0[24],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 24 (returns 0),769,0,0,769
+reg.write.imem0[25],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 25,1572,88,0,1660
+reg.read.imem0[25],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 25 (returns 0),805,0,0,805
+reg.write.imem0[26],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 26,1533,88,0,1621
+reg.read.imem0[26],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 26 (returns 0),823,0,0,823
+reg.write.imem0[27],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 27,1653,44,0,1697
+reg.read.imem0[27],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 27 (returns 0),771,0,0,771
+reg.write.imem0[28],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 28,1523,20,0,1543
+reg.read.imem0[28],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 28 (returns 0),795,0,0,795
+reg.write.imem0[29],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 29,1568,9,0,1577
+reg.read.imem0[29],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 29 (returns 0),767,0,0,767
+reg.write.imem0[30],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 30,1583,9,0,1592
+reg.read.imem0[30],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 30 (returns 0),772,0,0,772
+reg.write.imem0[31],reg,6,docs/mvp-regmap.md:223,the host wrote engine 0's IMEM word 31,1617,0,0,1617
+reg.read.imem0[31],reg,6,docs/mvp-regmap.md:228,the host read engine 0's IMEM word 31 (returns 0),816,0,0,816
+reg.read.sm0.clkdiv,reg,6,docs/mvp-regmap.md:263,"the host read SMe0_CLKDIV (RW, word 0x32)",793,1,0,794
+reg.write.sm0.clkdiv,reg,6,docs/mvp-regmap.md:263,"the host wrote SMe0_CLKDIV (RW, word 0x32)",7525,370,38,7895
+reg.read.sm0.execctrl,reg,6,docs/mvp-regmap.md:274,"the host read SMe0_EXECCTRL (RW, word 0x33)",744,1,0,745
+reg.write.sm0.execctrl,reg,6,docs/mvp-regmap.md:274,"the host wrote SMe0_EXECCTRL (RW, word 0x33)",7518,368,38,7886
+reg.read.sm0.shiftctrl,reg,6,docs/mvp-regmap.md:291,"the host read SMe0_SHIFTCTRL (RW, word 0x34)",778,1,0,779
+reg.write.sm0.shiftctrl,reg,6,docs/mvp-regmap.md:291,"the host wrote SMe0_SHIFTCTRL (RW, word 0x34)",7391,399,38,7790
+reg.read.sm0.addr,reg,6,docs/mvp-regmap.md:305,"the host read SMe0_ADDR (RO, word 0x35)",828,1556950,0,1557778
+reg.write.sm0.addr,reg,6,docs/mvp-regmap.md:305,"the host wrote SMe0_ADDR (RO, word 0x35)",371,0,0,371
+reg.read.sm0.instr,reg,6,docs/mvp-regmap.md:308,"the host read SMe0_INSTR (RW, word 0x36)",820,0,0,820
+reg.write.sm0.instr,reg,6,docs/mvp-regmap.md:308,"the host wrote SMe0_INSTR (RW, word 0x36)",79571,1452,1,81023
+reg.read.sm0.pinctrl,reg,6,docs/mvp-regmap.md:316,"the host read SMe0_PINCTRL (RW, word 0x37)",805,1,0,806
+reg.write.sm0.pinctrl,reg,6,docs/mvp-regmap.md:316,"the host wrote SMe0_PINCTRL (RW, word 0x37)",7517,370,38,7887
+reg.write.imem1[0],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 0,1619,25,3,1644
+reg.read.imem1[0],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 0 (returns 0),771,0,0,771
+reg.write.imem1[1],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 1,1524,25,0,1549
+reg.read.imem1[1],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 1 (returns 0),812,0,0,812
+reg.write.imem1[2],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 2,1579,25,0,1604
+reg.read.imem1[2],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 2 (returns 0),806,0,0,806
+reg.write.imem1[3],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 3,1580,25,0,1605
+reg.read.imem1[3],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 3 (returns 0),739,0,0,739
+reg.write.imem1[4],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 4,1624,25,0,1649
+reg.read.imem1[4],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 4 (returns 0),772,0,0,772
+reg.write.imem1[5],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 5,1563,25,0,1588
+reg.read.imem1[5],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 5 (returns 0),796,0,0,796
+reg.write.imem1[6],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 6,1592,25,0,1617
+reg.read.imem1[6],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 6 (returns 0),780,0,0,780
+reg.write.imem1[7],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 7,1594,23,0,1617
+reg.read.imem1[7],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 7 (returns 0),794,0,0,794
+reg.write.imem1[8],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 8,1560,22,0,1582
+reg.read.imem1[8],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 8 (returns 0),810,0,0,810
+reg.write.imem1[9],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 9,1606,15,0,1621
+reg.read.imem1[9],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 9 (returns 0),781,0,0,781
+reg.write.imem1[10],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 10,1573,14,0,1587
+reg.read.imem1[10],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 10 (returns 0),826,0,0,826
+reg.write.imem1[11],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 11,1636,8,0,1644
+reg.read.imem1[11],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 11 (returns 0),827,0,0,827
+reg.write.imem1[12],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 12,1642,5,0,1647
+reg.read.imem1[12],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 12 (returns 0),761,0,0,761
+reg.write.imem1[13],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 13,1550,5,0,1555
+reg.read.imem1[13],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 13 (returns 0),793,0,0,793
+reg.write.imem1[14],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 14,1656,5,0,1661
+reg.read.imem1[14],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 14 (returns 0),817,0,0,817
+reg.write.imem1[15],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 15,1629,5,0,1634
+reg.read.imem1[15],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 15 (returns 0),792,0,0,792
+reg.write.imem1[16],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 16,1586,5,0,1591
+reg.read.imem1[16],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 16 (returns 0),768,0,0,768
+reg.write.imem1[17],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 17,1589,5,0,1594
+reg.read.imem1[17],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 17 (returns 0),806,0,0,806
+reg.write.imem1[18],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 18,1566,5,0,1571
+reg.read.imem1[18],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 18 (returns 0),778,0,0,778
+reg.write.imem1[19],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 19,1601,5,0,1606
+reg.read.imem1[19],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 19 (returns 0),817,0,0,817
+reg.write.imem1[20],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 20,1590,5,0,1595
+reg.read.imem1[20],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 20 (returns 0),765,0,0,765
+reg.write.imem1[21],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 21,1556,5,0,1561
+reg.read.imem1[21],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 21 (returns 0),777,0,0,777
+reg.write.imem1[22],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 22,1578,5,0,1583
+reg.read.imem1[22],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 22 (returns 0),773,0,0,773
+reg.write.imem1[23],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 23,1547,5,0,1552
+reg.read.imem1[23],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 23 (returns 0),821,0,0,821
+reg.write.imem1[24],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 24,1584,5,0,1589
+reg.read.imem1[24],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 24 (returns 0),783,0,0,783
+reg.write.imem1[25],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 25,1599,5,0,1604
+reg.read.imem1[25],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 25 (returns 0),811,0,0,811
+reg.write.imem1[26],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 26,1613,5,0,1618
+reg.read.imem1[26],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 26 (returns 0),791,0,0,791
+reg.write.imem1[27],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 27,1620,1,0,1621
+reg.read.imem1[27],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 27 (returns 0),800,0,0,800
+reg.write.imem1[28],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 28,1607,0,0,1607
+reg.read.imem1[28],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 28 (returns 0),759,0,0,759
+reg.write.imem1[29],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 29,1565,0,0,1565
+reg.read.imem1[29],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 29 (returns 0),772,0,0,772
+reg.write.imem1[30],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 30,1556,0,0,1556
+reg.read.imem1[30],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 30 (returns 0),847,0,0,847
+reg.write.imem1[31],reg,6,docs/mvp-regmap.md:223,the host wrote engine 1's IMEM word 31,1606,0,0,1606
+reg.read.imem1[31],reg,6,docs/mvp-regmap.md:228,the host read engine 1's IMEM word 31 (returns 0),776,0,0,776
+reg.read.sm1.clkdiv,reg,6,docs/mvp-regmap.md:263,"the host read SMe1_CLKDIV (RW, word 0x38)",772,0,0,772
+reg.write.sm1.clkdiv,reg,6,docs/mvp-regmap.md:263,"the host wrote SMe1_CLKDIV (RW, word 0x38)",7435,25,3,7460
+reg.read.sm1.execctrl,reg,6,docs/mvp-regmap.md:274,"the host read SMe1_EXECCTRL (RW, word 0x39)",801,0,0,801
+reg.write.sm1.execctrl,reg,6,docs/mvp-regmap.md:274,"the host wrote SMe1_EXECCTRL (RW, word 0x39)",7473,25,3,7498
+reg.read.sm1.shiftctrl,reg,6,docs/mvp-regmap.md:291,"the host read SMe1_SHIFTCTRL (RW, word 0x3a)",807,0,0,807
+reg.write.sm1.shiftctrl,reg,6,docs/mvp-regmap.md:291,"the host wrote SMe1_SHIFTCTRL (RW, word 0x3a)",7488,25,3,7513
+reg.read.sm1.addr,reg,6,docs/mvp-regmap.md:305,"the host read SMe1_ADDR (RO, word 0x3b)",775,11,0,786
+reg.write.sm1.addr,reg,6,docs/mvp-regmap.md:305,"the host wrote SMe1_ADDR (RO, word 0x3b)",353,0,0,353
+reg.read.sm1.instr,reg,6,docs/mvp-regmap.md:308,"the host read SMe1_INSTR (RW, word 0x3c)",798,0,0,798
+reg.write.sm1.instr,reg,6,docs/mvp-regmap.md:308,"the host wrote SMe1_INSTR (RW, word 0x3c)",79810,76,0,79886
+reg.read.sm1.pinctrl,reg,6,docs/mvp-regmap.md:316,"the host read SMe1_PINCTRL (RW, word 0x3d)",781,0,0,781
+reg.write.sm1.pinctrl,reg,6,docs/mvp-regmap.md:316,"the host wrote SMe1_PINCTRL (RW, word 0x3d)",7431,25,3,7456
+reg.reserved.read,reg,5,docs/mvp-regmap.md:76,the host read a reserved or unmapped word address (it returned 0),27014,0,0,27014
+reg.reserved.write,reg,5,docs/mvp-regmap.md:76,the host wrote a reserved or unmapped word address (the write was ignored),12041,0,0,12041
+reg.ro.write_ignored,reg,5,docs/mvp-regmap.md:305,the host wrote a read-only register and the write was ignored,4366,0,0,4366
+reg.imem.two_cycle_lag,reg,8,docs/mvp-regmap.md:233,"a host IMEM write reached execution in the very cycle the lower bound allows (h+2, the stationary-PC case)",321,7,1,328
+reg.imem.late_fetch,reg,8,docs/mvp-regmap.md:238,a host IMEM write reached execution later than h+2 because the engine had already fetched that address in the write cycle,5724,2251,103,7975
+fdebug.flag_survives_w1c,fifo,10,docs/mvp-regmap.md:191,"an engine raised an FDEBUG flag in the same core cycle the host cleared it with a W1C write, and the flag stayed set",8,0,1,8

@@ -1,0 +1,137 @@
+; I2C controller for the MVP chip.
+;
+; One program covers everything the host needs: a byte write, a repeated-START byte
+; read, and the STOP that ends a transaction. The host chooses which by the entry
+; point it forces into SM_INSTR and by the words it pushes, never by editing IMEM.
+;
+; Where the pins are
+; ---------------
+; Both I2C lines must be uio pins, because open drain needs PINDIRS (docs/mvp-isa.md
+; `### Open drain`: the level register stays 0 and the program toggles the direction).
+; SCL = SDA_PIN + 1 so that one 2-pin window covers both.
+;
+;   side-set, 1 bit, SIDESET_BASE = SCL_PIN, SIDE_PINDIR = 1
+;       side 0 -> SCL released, side 1 -> SCL pulled low.  There is no `opt`, so every
+;       instruction writes this bit: an instruction without a `side` operand releases
+;       SCL, and every instruction inside a low phase has to say `side 1`.
+;   OUT window, 1 pin, OUT_BASE = SDA_PIN, OUT_COUNT = 1
+;       `out pindirs, 1` writes SDA's direction from one OSR bit: 1 = pull low,
+;       0 = release.  This is the data/ACK bit, MSB first (OUT_SHIFTDIR = 0).
+;   SET window, 1 pin, SET_BASE = SDA_PIN, SET_COUNT = 1
+;       `set pindirs, 1` pulls SDA low without touching the OSR, which is how the START
+;       and the STOP are made: an `out pindirs, 1` there would shift out whatever the
+;       OSR happened to hold, and the OSR is empty before the first `pull block`.
+;   IN window, IN_BASE = SDA_PIN: `in pins, 1` samples SDA.
+;   `wait 1 gpio SCL_PIN` waits for the *bus* to read SCL high, which is where clock
+;       stretching is absorbed: the side-set releases SCL in the instruction's first SM
+;       cycle and the wait then stalls for as long as a slave holds the line low.
+;
+; Why this differs from the RP2040 pico-examples program (docs/mvp-isa.md `### Open
+; drain` and `## Differences from RP2040`):
+;   * There is no OE inversion in the MVP pin mux, so the direction sense is the
+;     opposite: side 0 / `out pindirs, 0` release a line and 1 pulls it low. The
+;     RP2040 program's `side 0`/`side 1` and `set pindirs` spellings are swapped.
+;   * `set gpio_inv, 1` does not exist and the assembler has no such instruction.
+;   * There is no IRQ, so nothing can be parked in `irq wait`; the program idles in
+;     `init` (the wrap target) and the host sees the PC in SM0_ADDR.
+;   * The IMEM is 32 words, so the two bit loops of the RP2040 program (one per
+;     direction) collapse into one loop here: the host decides read vs write purely
+;     by the bits it pushes, which is why `out pindirs, 1` and `in pins, 1` share
+;     the same two instructions.
+;
+; The host protocol, one 32-bit TX word per byte (fw/i2c/driver.py builds them):
+;   bits 31:24  the eight data bits, MSB first, already inverted for the direction
+;               register that `out pindirs, 1` writes.  For a read these are all ones
+;               (released), which leaves SDA to the slave.
+;   bit  23     the ninth bit time.  0 releases SDA (a write byte's ACK clock, where the
+;               slave answers); 1 pulls SDA low, which is the master's ACK on a read
+;               byte and its NAK when the host wants to end the read.
+; Y = number of words still to send, loaded by the host with a forced `set y, n`.
+; SHIFTCTRL: AUTOPULL off (the program pulls explicitly), PULL_THRESH 9, AUTOPUSH on,
+; PUSH_THRESH 9, OUT_SHIFTDIR 0 and IN_SHIFTDIR 0, so one RX word per byte holds the
+; nine sampled bits with the data byte in bits 8:1 and the ninth bit in bit 0.
+
+.program i2c
+.side_set 1 pindirs             ; the side-set drives SCL's direction, not its level
+
+.define PUBLIC SDA_PIN 0
+.define PUBLIC SCL_PIN 1
+
+; Bit-time share of the three instructions of bitloop, in SM cycles of delay.
+; The host picks CLKDIV so that one bit is long enough for the mode it targets;
+; these three only have to be non-zero and ordered for the data setup time.
+.define LOW_HOLD 2      ; SCL low, SDA already valid: tHD;DAT and tSU;DAT
+.define HIGH_HOLD 1     ; SCL high after the stretch has ended: tHIGH
+.define LOW_TAIL 2      ; SCL low after the sample: tLOW
+
+.wrap_target main
+.wrap stop_end
+
+; ---------------------------------------------------------------------------------
+; The wrap region: the bus is idle, so both lines are released and stay that way.
+; A host that only wants an idle bus lets the engine sit here.
+; ---------------------------------------------------------------------------------
+init:
+    set pindirs, 0            ; MVP open drain: 0 = high-Z.  The SET window is one pin
+    jmp init                  ; wide and reaches SDA; this instruction's own side-set
+                              ; (no `side` operand, so 0) releases SCL, so both lines
+                              ; end up released and the bus reads high.
+
+; ---------------------------------------------------------------------------------
+; Entry point for a transaction. The host forces `jmp main` (fresh transaction, i.e.
+; after tBUF) or jumps here again while the bus is mid-transaction, which produces a
+; repeated START: the only difference is how long the bus has been free, and the
+; first instruction waits for SCL high and holds for tSU;STA either way.
+; ---------------------------------------------------------------------------------
+main:
+    nop side 1 [15]                     ; hold SCL low: the bus was left with SCL low
+                                        ; and SDA released, and tLOW has to be met
+                                        ; again before the START (or repeated START)
+    wait 1 gpio SCL_PIN side 0 [15]     ; release SCL, bus free / tSU;STA, then hold
+    set pindirs, 1 side 0 [2]           ; SDA low while SCL is high => START
+    wait 1 gpio SCL_PIN side 0 [2]      ; SDA low while SCL is high
+    nop side 1 [15]                     ; SCL low, SDA low: tHD;STA
+    jmp next_byte side 1                ; the address byte is the first word
+
+; ---------------------------------------------------------------------------------
+; One bit time. The same three instructions drive a write byte and clock a read byte:
+; `out pindirs, 1` puts the OSR bit on SDA's direction (a 0 releases it, which is
+; what a read byte needs for its eight data bits), SCL goes out and is waited for, and
+; SDA is sampled on the way down. AUTOPUSH at nine bits empties the ISR into the RX
+; FIFO once per byte, so no explicit push is needed.
+; ---------------------------------------------------------------------------------
+bitloop:
+    out pindirs, 1 side 1 [LOW_HOLD]    ; SDA = next OSR bit, SCL still low
+    wait 1 gpio SCL_PIN side 0 [HIGH_HOLD]  ; release SCL, wait it high, tHIGH
+    in pins, 1 side 1 [LOW_TAIL]       ; sample SDA, pull SCL low, tLOW
+    jmp x-- bitloop side 1             ; X-- and loop; the ninth one falls through
+
+; ---------------------------------------------------------------------------------
+; One word per byte. Y counts the words the host queued: it is decremented on the way
+; in, and when it is zero there is nothing left to send. The bus is then left with SCL
+; low and SDA released, which is exactly where a repeated START or a STOP starts from,
+; so the host decides what happens next by forcing a jump.
+; ---------------------------------------------------------------------------------
+next_byte:
+    jmp !y idle side 1                 ; no words left
+    set x, 8 side 1                     ; eight bit times left after the first one, so
+                                        ; nine per byte, the ninth being the ACK clock
+    pull block side 1                   ; the next word
+    jmp y-- bitloop side 1
+
+idle:
+    jmp idle side 1
+
+; ---------------------------------------------------------------------------------
+; STOP, entered by forcing `jmp stop_seq`. SDA is released already, so it is pulled
+; low first, SCL is released and held high for tSU;STO with SDA released, and SCL goes
+; back low. The bus is then free for tBUF, which the host waits out.
+; ---------------------------------------------------------------------------------
+stop_seq:
+    set pindirs, 1 side 1 [LOW_HOLD]    ; SDA low, SCL low
+    wait 1 gpio SCL_PIN side 0 [10]     ; release SCL, wait it high
+    set pindirs, 0 side 0 [10]          ; SDA released while SCL is high => STOP,
+                                        ; and the side-set keeps SCL released
+    nop side 1 [4]                      ; SCL low: the bus is idle again
+stop_end:
+    jmp idle side 1

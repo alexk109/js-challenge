@@ -1,0 +1,6 @@
+# simulator build scratch, and the cocotb results file
+sim_build/
+results.xml
+__pycache__/
+# the selftest writes its reports here, under repros/
+repros/selftest/

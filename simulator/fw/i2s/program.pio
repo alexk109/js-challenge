@@ -1,0 +1,149 @@
+;
+; I2S controller for the MVP chip: the bit clock, the serial data, and -- on the second
+; engine -- the word select.
+;
+; The chip plays the *controller*: the device that generates SCK and WS (UM11732 §3, "the
+; device generating SCK and WS is the controller").  One stereo frame is two slots, left
+; then right, and a slot is one sample.
+;
+; Why two engines and not one
+; ---------------------------
+; A slot's word-select level must change exactly on the leading edge that is one whole
+; clock period ahead of the edge that latches the MSB (UM11732 §3.1: "The transmitter
+; always sends the MSB of the next word one clock period after the WS changes").  That
+; edge is written by the *same instruction* that raises SCK, so on one engine the loop
+; would need one copy of every instruction per channel: 2 instructions per bit cell times
+; 2 copies times the slot length.  With 32 words of IMEM (docs/mvp-isa.md `### Engine
+; state`) that caps a slot at 8 cells, i.e. 8-bit samples.
+;
+; Splitting the job removes the copy: engine 0 keeps one single HIGH/LOW pair and shifts
+; the data out, engine 1 writes WS once per slot.  Both engines wrap on the same slot
+; length and are started by the same CTRL write, so they stay in lockstep
+; (docs/mvp-isa.md `### Clock divider`: "Engines restarted together stay in lockstep").
+;
+; The wire timing, from the spec
+; ------------------------------
+;   tick      ...   w        w + T/2        w + T  ...
+;   bclk           _/¯\_/¯¯\_/¯¯¯\_            rising at w and w+T
+;   ws             changes at w; next change at w + 16T
+;   sd             the previous word's LSB until w + T/2, the MSB from w + T/2
+;
+; so a slot opens on a rising edge, the MSB's data cell is the half-period after it, and
+; the LSB of a slot rides out on the *next* slot's opening edge (UM11732 §6.2 writes a slot
+; out "On the next WS-level change").  Everything below is that picture:
+;
+;   * `nop side 1` is the HIGH half: it raises SCK through the side-set window and writes
+;     no data, because SD must not move on the edge that latches it (`thtr >= 0` cannot be
+;     resolved at zero hold, so the checker reads a change in the same tick as the edge as
+;     a violation).
+;   * `out pins, 1 side 0` is the LOW half: it lowers SCK and puts the next data bit on SD
+;     through the OUT window, one half period before the edge that latches it.
+;
+; HALF_DELAY 3 gives a 50% duty cycle, 4 SM cycles per half and 8 per bit clock period.
+; The rate itself comes from CLKDIV, exactly as on an RP2040: the program fixes the shape,
+; the divider sets the speed (fw/i2s/driver.py, `### Speed`).
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`), all of it built by
+; fw/i2s/driver.py:
+;
+;   PINCTRL engine 0  SIDESET_BASE = OUT_BASE = the SCK and SD pins, SIDESET_COUNT = 1
+;                     with EXECCTRL.SIDE_EN = 0 (one side-set *data* bit, no `opt`
+;                     enable), OUT_COUNT = 1, SET_COUNT = 0.
+;                     Both are 0..7 uio pins: only those can be driven
+;                     (docs/mvp-isa.md `### The 18 protocol pins`).
+;   PINCTRL engine 1  OUT_BASE = the WS pin, OUT_COUNT = 1, SIDESET_COUNT = 0 --
+;                     the reset value is 2, and with SIDE_EN = 0 an engine that never says
+;                     otherwise side-sets level 0 into two pins on every SM cycle.
+;   SHIFTCTRL engine 0 OUT_SHIFTDIR = 0 (shift *left*, so the MSB leaves first, as
+;                     UM11732 §3.1 wants), AUTOPULL = 1, PULL_THRESH = 16: one TX FIFO
+;                     word per slot, and the host pushes it left-justified in bits 31:16.
+;   SHIFTCTRL engine 1 OUT_SHIFTDIR = 1 (its reset value; the level is in bit 0),
+;                     AUTOPULL = 0 -- engine 1 fetches with an explicit `pull block`,
+;                     which is what stops the stream (see below).
+;   EXECCTRL both     WRAP_BOTTOM = 0, WRAP_TOP = the last word of the program, so one
+;                     wrap is exactly one slot.
+;
+; Stopping the stream
+; -------------------
+; Both engines run out of TX FIFO words at the same slot boundary and stall there:
+; engine 0's next `out pins, 1` finds an empty OSR and an empty FIFO, and engine 1's
+; `pull block` (its last instruction of the slot) stalls one cycle *before* the wrap.  So
+; the final rising edge of the stream happens with no WS change, the last slot is
+; complete, and the checker can close it: the stream ends where UM11732 §6.2 says a slot
+; is written out.  Nothing here needs the host to know a cycle boundary.
+;
+
+.program i2s
+.side_set 1
+
+.define HALF_DELAY 3                ; a half period is 1 + 3 = 4 SM cycles
+
+.wrap_target 0
+.wrap 31
+
+PUBLIC start:
+        nop      side 1 [HALF_DELAY]   ;  0  HIGH half of cell 0.  This is the leading edge
+                                        ;     that opens the slot: engine 1 writes WS here.
+        out pins, 1 side 0 [HALF_DELAY] ;  1  LOW half: SD gets the MSB of the sample
+        nop      side 1 [HALF_DELAY]   ;  2  HIGH half: the MSB is latched here
+        out pins, 1 side 0 [HALF_DELAY] ;  3  SD gets bit 1
+        nop      side 1 [HALF_DELAY]   ;  4
+        out pins, 1 side 0 [HALF_DELAY] ;  5  bit 2
+        nop      side 1 [HALF_DELAY]   ;  6
+        out pins, 1 side 0 [HALF_DELAY] ;  7  bit 3
+        nop      side 1 [HALF_DELAY]   ;  8
+        out pins, 1 side 0 [HALF_DELAY] ;  9  bit 4
+        nop      side 1 [HALF_DELAY]   ; 10
+        out pins, 1 side 0 [HALF_DELAY] ; 11  bit 5
+        nop      side 1 [HALF_DELAY]   ; 12
+        out pins, 1 side 0 [HALF_DELAY] ; 13  bit 6
+        nop      side 1 [HALF_DELAY]   ; 14
+        out pins, 1 side 0 [HALF_DELAY] ; 15  bit 7
+        nop      side 1 [HALF_DELAY]   ; 16
+        out pins, 1 side 0 [HALF_DELAY] ; 17  bit 8
+        nop      side 1 [HALF_DELAY]   ; 18
+        out pins, 1 side 0 [HALF_DELAY] ; 19  bit 9
+        nop      side 1 [HALF_DELAY]   ; 20
+        out pins, 1 side 0 [HALF_DELAY] ; 21  bit 10
+        nop      side 1 [HALF_DELAY]   ; 22
+        out pins, 1 side 0 [HALF_DELAY] ; 23  bit 11
+        nop      side 1 [HALF_DELAY]   ; 24
+        out pins, 1 side 0 [HALF_DELAY] ; 25  bit 12
+        nop      side 1 [HALF_DELAY]   ; 26
+        out pins, 1 side 0 [HALF_DELAY] ; 27  bit 13
+        nop      side 1 [HALF_DELAY]   ; 28
+        out pins, 1 side 0 [HALF_DELAY] ; 29  bit 14, the LSB.  It is latched on the next
+                                        ;     slot's opening edge, one period from here.
+        nop      side 1 [HALF_DELAY]   ; 30  HIGH half of the slot's last cell
+        out pins, 1 side 0 [HALF_DELAY] ; 31  its LSB goes out on SD; the wrap then reopens
+                                        ;     instruction 0, whose rising edge latches it
+                                        ;     and, on engine 1, changes WS.
+
+;
+; Engine 1: one WS write per slot, then padding, and the fetch of the next slot's level in
+; the slot's last SM cycle.  The slot is 4 + 4 + ... = 128 SM cycles long, which is exactly
+; the 32 instructions x 4 SM cycles of `i2s` above -- the two wraps must be the same length
+; or the WS edges would drift away from the clock edges (the checker's WS-EDGE rule).
+;
+; The `out pins, 1` is the *first* instruction, so WS moves on the slot's opening edge; the
+; `pull block` is the *last*, so the level for the next slot is in the OSR before that
+; opening edge.  Host-forcing one `pull block` before the engine starts primes the OSR with
+; the first level, which is what lets slot 0 write WS in its first SM cycle.
+;
+.program i2s_ws
+.side_set 0                          ; no side-set: this engine writes one pin and nothing else
+
+.wrap_target 0
+.wrap 4
+
+PUBLIC start:
+        out pins, 1              ; SM cycle 0 of the slot: WS for this slot, bit 0 of the
+                                   ; word the previous slot's pull fetched
+        nop [31]                  ; 32
+        nop [31]                  ; 32
+        nop [31]                  ; 32
+        pull block [30]           ; SM cycle 127: fetch the level for the next slot.  With an
+                                   ; empty TX FIFO this blocks *here*, one cycle before the
+                                   ; wrap, so the next opening edge happens with no WS change
+                                   ; and the last slot stays complete (see `Stopping the
+                                   ; stream` above).

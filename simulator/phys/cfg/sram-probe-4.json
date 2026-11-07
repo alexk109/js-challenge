@@ -1,0 +1,115 @@
+{
+  "//": "four RM_IHPSG13_1P_64x16_c2 side by side, one per SM, inside the TT top level, 6x4 tiles. Same recipe as phys/cfg/sram-probe.json; this config is what decides whether N_SM = 4 with SRAM IMEM fits, so it also measures the four testers' area and the routing the macro pin escapes need.",
+  "//2": "Macros stacked in y at one x instead of side by side in x, and that is forced by the TT precheck. With 4 macros of 236.80 um on a 6x4 core the arithmetic is x_first + sliver = 38.0 um when the x spacing is 5 x 67.44 = 337.2, so at least one of the three inter-macro gaps or the two edge margins is under 40 um. pdngen answers every free region narrower than a stripe pitch with a LOCAL power stripe whose Metal4 shape spans only the rows that survive there (a via stack down to the Metal1 rails in each), and pin_check.py canonicalises a power port into maximal rectangles and requires every one of them to reach within 10 um of both block edges. So any narrow region fails the pin check. A partial-height row window only happens BESIDE a macro (its 10 um halo cuts the middle rows only in its own x range); above and below a macro the rows are full width, so a stripe there is full height. Stacking in y at one x removes every narrow free region. See the attempt1 log for the failure at 4 macros side by side.",
+  "kind": "tt",
+  "top": "tt_um_sram_probe4",
+  "tiles": "6x4",
+  "sources": [
+    "tt_um_sram_probe4.v",
+    "sram_tester.v"
+  ],
+  "extra_src": [
+    "RM_IHPSG13_1P_64x16_c2.v",
+    "pdn_cfg.tcl"
+  ],
+  "clock_period": 20,
+  "tag": "sram-probe-4",
+  "params": {
+    "N_SM": 4,
+    "IMEM_DEPTH": 64
+  },
+  "librelane": {
+    "//": "MACROS - the LibreLane way of bringing in a hard macro, not EXTRA_LEFS/EXTRA_GDS_FILES. Key is the macro name; the files come from the PDK this repo hardens against (IHP-Open-PDK 2bbec755, the rev tt-gds-action pins), so nothing is vendored in the repo. pdk_dir:: resolves against $PDK_ROOT.",
+    "MACROS": {
+      "RM_IHPSG13_1P_64x16_c2": {
+        "//instances": "Flattened instance paths, one per macro, all directly in the top module. location is the lower-left corner in um, absolute in DIE_AREA. All four sit at y = 40, off the bottom core edge, and at x = 12 + k*337.2 = 12 + k*5*67.44 -- a multiple of the stripe pitch, NOT merely a multiple of the macro's 11.24 um column pitch: at 12 + 28*11.24 a stripe pair lands in the macro's irregular middle band, 1.6 um from the nearest same-net column, and src/pdn_cfg.tcl fails the PDN step. orientation FS keeps the power columns vertical and the 43 Metal2 signal pins on the top edge of each macro.",
+        "instances": {
+          "u_imem0": {
+            "location": [
+              12,
+              40
+            ],
+            "orientation": "FS"
+          },
+          "u_imem1": {
+            "location": [
+              12,
+              140
+            ],
+            "orientation": "FS"
+          },
+          "u_imem2": {
+            "location": [
+              12,
+              240
+            ],
+            "orientation": "FS"
+          },
+          "u_imem3": {
+            "location": [
+              12,
+              340
+            ],
+            "orientation": "FS"
+          }
+        },
+        "gds": [
+          "pdk_dir::libs.ref/sg13cmos5l_sram/gds/RM_IHPSG13_1P_64x16_c2.gds"
+        ],
+        "lef": [
+          "pdk_dir::libs.ref/sg13cmos5l_sram/lef/RM_IHPSG13_1P_64x16_c2.lef"
+        ],
+        "//lib": "Keyed by timing-corner wildcard. The cmos5l STA corners are nom_typ_1p20V_25C, nom_fast_1p32V_m40C and nom_slow_1p08V_125C and LibreLane loads every key that matches (common/toolbox.py filter_views), so the keys name the process corner. The reference project's nom_*/min_*/max_*/ * keys silently gave the typ lib at all three corners and never used fast or slow.",
+        "lib": {
+          "*_typ_*": [
+            "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_64x16_c2_typ_1p20V_25C.lib"
+          ],
+          "*_fast_*": [
+            "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_64x16_c2_fast_1p32V_m55C.lib"
+          ],
+          "*_slow_*": [
+            "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_64x16_c2_slow_1p08V_125C.lib"
+          ]
+        },
+        "//nl": "Port-only blackbox, copied into the shadow project by extra_src. NOT the PDK behavioural model, which would be synthesised.",
+        "nl": [
+          "dir::RM_IHPSG13_1P_64x16_c2.v"
+        ],
+        "spice": [
+          "pdk_dir::libs.ref/sg13cmos5l_sram/cdl/RM_IHPSG13_1P_64x16_c2.cdl"
+        ]
+      }
+    },
+    "//PDN_MACRO_CONNECTIONS": "Hooks every macro's power pins onto the block nets without USE_POWER_PINS in the RTL: <instance> <block vdd> <block gnd> <macro vdd pin> <macro gnd pin>. One line per macro and per supply: VDD! (periphery) and VDDARRAY! (bit-cell array) both go to VPWR, as the reference project does.",
+    "PDN_MACRO_CONNECTIONS": [
+      "u_imem0 VPWR VGND VDD! VSS!",
+      "u_imem0 VPWR VGND VDDARRAY! VSS!",
+      "u_imem1 VPWR VGND VDD! VSS!",
+      "u_imem1 VPWR VGND VDDARRAY! VSS!",
+      "u_imem2 VPWR VGND VDD! VSS!",
+      "u_imem2 VPWR VGND VDDARRAY! VSS!",
+      "u_imem3 VPWR VGND VDD! VSS!",
+      "u_imem3 VPWR VGND VDDARRAY! VSS!"
+    ],
+    "//PDN_CFG": "LibreLane's default PDN script with its macro grid replaced. On cmos5l FP_PDN_VERTICAL_LAYER is Metal4, which is also the layer of the macro's power pins, and TopMetal1 belongs to tt_top, so the default macro grid (Metal4 <-> TopMetal1) is empty and pdngen alone leaves the macro unconnected. This script lets the Metal4 stripes run through the macro inside its same-net power columns, so every stripe is one full-height power pin (the precheck pin check demands that), verifies every stripe over the macro, and fails the PDN step at once if check_power_grid still finds an open. dir:: resolves against the config's directory, i.e. proj/src/pdn_cfg.tcl.",
+    "PDN_CFG": "dir::pdn_cfg.tcl",
+    "//FP_PDN_V*": "Stripe geometry, all derived from the macro LEF; see the header of src/pdn_cfg.tcl. VPITCH 67.44 = 6 x 11.24 is the macro's same-net power column pitch; VSPACING 3.52 puts the GROUND stripe of a pair 5.62 um from the POWER one, the macro's POWER-to-GROUND column distance; VOFFSET 26.36 from the core xMin 2.88 gives the first POWER stripe centre at 29.24 = macro x 12 + 17.24, half a slack inside the k=1 column so that both halves of the macro (which are 0.67 um off each other's grid) are covered. VWIDTH stays at TT's 2.1 um because these stripes are also the block's power pins, which tt_top connects to, and 2.1 um is the precheck's minimum power-port width on this tech.",
+    "FP_PDN_VPITCH": 67.44,
+    "FP_PDN_VWIDTH": 2.1,
+    "FP_PDN_VSPACING": 3.52,
+    "FP_PDN_VOFFSET": 26.36,
+    "//PDN_MULTILAYER": "No TopMetal1 in a user block: it belongs to tt_top, and the TT precheck forbids it in the block GDS.",
+    "FP_PDN_MULTILAYER": 0,
+    "//MAGIC_EXT_ABSTRACT_CELLS": "Blackbox the macro during SPICE extraction for LVS: the IHP SRAM macros are not LVS clean (reference repo commit 'fix: blackbox SRAM macros during LVS').",
+    "MAGIC_EXT_ABSTRACT_CELLS": [
+      "RM_IHPSG13_.*"
+    ],
+    "//ERROR_ON_MAGIC_DRC": "The macro internals trigger massive DRC in Magic, whose cmos5l tech lacks the SRAM exceptions the KLayout sign-off deck applies. Every error is inside the macro's bounding box. Magic DRC is not part of the TT cmos5l precheck, which uses KLayout, so it is off entirely here (see docs/2026-09-22-setup-and-architecture-review.md sec. 1) -- that is also the ~30 min of the 40 min the G0 stub run spent in Magic.",
+    "RUN_MAGIC_DRC": 0,
+    "ERROR_ON_MAGIC_DRC": false,
+    "//ERROR_ON_ILLEGAL_OVERLAPS": "Off for ONE known, checked case: the four POWER stripes cross the macro's VDD!/VDDARRAY! split, where the LEF puts a Metal4 OBS across each power column (local y 39.085..45.205). Magic extracts the macro from its LEF (MAGIC_EXT_ABSTRACT_CELLS above) and reports each crossing as 'Illegal overlap between obsm4 and metal4 (types do not connect)'. The real GDS has no Metal4 at all in that band, LVS passes, and the cmos5l sign-off DRC sees only the real metal. The count is still reported as magic__illegal_overlap__count in the run's metrics.",
+    "ERROR_ON_ILLEGAL_OVERLAPS": false,
+    "//MAGIC_MACRO_STD_CELL_SOURCE": "Read the full macro GDS instead of a blackbox. cmos5l sets PRIMARY_GDSII_STREAMOUT_TOOL=klayout, so this may end up unused; kept because it is harmless and it is what the reference needs.",
+    "MAGIC_MACRO_STD_CELL_SOURCE": "PDK"
+  }
+}

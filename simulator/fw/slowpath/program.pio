@@ -1,0 +1,72 @@
+; SPDX-License-Identifier: Apache-2.0
+;
+; The two directed programs for the slow-corner paths (docs/mvp-isa.md `## Timing`).
+;
+; Both are three or four instructions and both start with a `wait`, because that is the one
+; instruction whose timing the *host* chooses: the engine is parked on it until a pin the host
+; owns goes high, and the host knows the exact core cycle it drove that pin.  Every cycle
+; count the test checks is measured from that edge, so nothing here depends on when an SPI
+; transaction happened to land -- which is not knowable over the host port.
+;
+; `fetch_probe` answers with a pin pulse (the fetch path, into `u_eng.ir`), `rxf_probe`
+; answers with an RX FIFO push (the RX FIFO memory write path, into `u_eng.u_rxf.mem`).
+; The pin numbers are the PIO pin numbers of docs/mvp-regmap.md `### Address map`: 0..7 are
+; the `uio` pins, 8..12 the five input-only ones on `ui_in[7:3]`, 13..17 the five
+; output-only ones on `uo_out[7:3]`.
+
+.program fetch_probe
+; The host drives protocol pin 8 (ui_in[3]) high; the engine is stalled here until it sees
+; it in IN_VEC, which is three core cycles later (pio_chip's T_IN = 3 register stages).
+wait 1 pin, 0            ; 0: stalls while ui_in[3] is low (IN_BASE = 8, so the index is 0)
+set pins, 1              ; 1: the answer starts: uo_out[3] goes high one core cycle later
+set pins, 0              ; 2: the answer ends, so the host's next request can re-stall
+jmp 0                    ; 3: back to the wait, one SM cycle
+
+.program rxf_probe
+; The same release, but the answer is a push: the word lands in engine 1's RX FIFO, which is
+; the memory the worst slow-corner path ends in.  `pull` takes the word from the TX FIFO, so
+; the host chooses it (and the MVP assembler has no immediate form of `mov`, `docs/mvp-isa.md`
+; `### Instruction semantics`), and `push` writes OSR into the RX FIFO.
+wait 1 pin, 0            ; 0: stalls while ui_in[4] is low (IN_BASE = 9, so the index is 0)
+pull                     ; 1: OSR <- the next word of TXF1
+mov isr, osr             ; 2: `push` pushes the *ISR* (docs/mvp-isa.md `### Shift`), so the
+                         ;    word has to be moved across before it can be pushed
+push                     ; 3: the RX FIFO write, the endpoint under test
+jmp 0                    ; 4: back to the wait, one SM cycle
+; The two mutants below are the negative controls: each is the program above with exactly one
+; extra `nop` in front of the instruction that produces the answer, so every answer arrives
+; exactly one SM cycle -- `D` core cycles -- later than the program it was copied from.  A
+; checker that cannot tell a program's own timing from its surroundings would see no
+; difference; the tests require the difference to be exactly `D`.
+
+.program fetch_probe_late
+wait 1 pin, 0            ; 0
+nop                      ; 1: the planted fault: one SM cycle before the answer
+set pins, 1              ; 2
+set pins, 0              ; 3
+jmp 0                    ; 4
+
+.program rxf_probe_late
+wait 1 pin, 0            ; 0
+nop                      ; 1: the planted fault
+pull                     ; 2
+mov isr, osr             ; 3
+push                     ; 4
+jmp 0                    ; 5
+
+.program fetch_control
+; One program, two loop lengths, and the host's own pin chooses: the JMP's PIN condition reads
+; `EXECCTRL.JMP_PIN`, an absolute pin index, so the host driving pin 8 high takes the branch and
+; driving it low does not.  Both paths produce the same pin pulse once per loop; only the number
+; of SM cycles the loop takes differs, by the two instructions the taken path skips.
+;
+; (`in x, 1` cannot be used to load the host's pin into X: the MVP's IN has no destination
+; field -- `docs/mvp-isa.md` `### Field values` lists an IN *Source* only, and `## Removed and
+; reserved encodings` names IN Source `100`/`101` -- so IN always shifts into the ISR, in the
+; RTL and in both ISSs alike.)
+set pins, 1            ; 0: the answer rises
+set pins, 0            ; 1: and falls, so the next iteration is an edge too
+jmp pin, 5              ; 2: taken when the host's pin is high -> 5, not taken -> 3
+nop                    ; 3: the two instructions a taken branch skips
+nop                    ; 4
+jmp 0                  ; 5

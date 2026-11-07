@@ -1,0 +1,10 @@
+{
+  "//": "same stub written in SystemVerilog, read through Yosys' slang frontend (USE_SLANG).",
+  "kind": "tt",
+  "top": "tt_um_protocol_emulator",
+  "tiles": "6x4",
+  "sources": ["tt_um_protocol_emulator.v", "stub_pkg.sv", "stub_uart_tx.sv"],
+  "clock_period": 20,
+  "params": {"N_SM": 0},
+  "librelane": {"USE_SLANG": true}
+}

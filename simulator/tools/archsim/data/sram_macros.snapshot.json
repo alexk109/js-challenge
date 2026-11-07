@@ -1,0 +1,302 @@
+[
+ {
+  "area_um2": 15240.448,
+  "bits": 16,
+  "h_um": 64.36,
+  "name": "1P_64x16",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_64x16_c2.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 64
+ },
+ {
+  "area_um2": 50489.133,
+  "bits": 64,
+  "h_um": 64.36,
+  "name": "1P_64x64",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_64x64_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 784.48,
+  "words": 64
+ },
+ {
+  "area_um2": 17546.88,
+  "bits": 8,
+  "h_um": 74.1,
+  "name": "1P_256x8",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_256x8_c3_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 256
+ },
+ {
+  "area_um2": 28127.104,
+  "bits": 16,
+  "h_um": 118.78,
+  "name": "1P_256x16",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_256x16_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 256
+ },
+ {
+  "area_um2": 49488.499,
+  "bits": 32,
+  "h_um": 118.78,
+  "name": "1P_256x32",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_256x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 416.64,
+  "words": 256
+ },
+ {
+  "area_um2": 70849.894,
+  "bits": 48,
+  "h_um": 118.78,
+  "name": "1P_256x48",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_256x48_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 596.48,
+  "words": 256
+ },
+ {
+  "area_um2": 93180.534,
+  "bits": 64,
+  "h_um": 118.78,
+  "name": "1P_256x64",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_256x64_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 784.48,
+  "words": 256
+ },
+ {
+  "area_um2": 26137.984,
+  "bits": 8,
+  "h_um": 110.38,
+  "name": "1P_512x8",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_512x8_c3_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 512
+ },
+ {
+  "area_um2": 45309.312,
+  "bits": 16,
+  "h_um": 191.34,
+  "name": "1P_512x16",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_512x16_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 512
+ },
+ {
+  "area_um2": 79719.898,
+  "bits": 32,
+  "h_um": 191.34,
+  "name": "1P_512x32",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_512x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 416.64,
+  "words": 512
+ },
+ {
+  "area_um2": 150102.403,
+  "bits": 64,
+  "h_um": 191.34,
+  "name": "1P_512x64",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_512x64_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 784.48,
+  "words": 512
+ },
+ {
+  "area_um2": 49419.245,
+  "bits": 8,
+  "h_um": 336.46,
+  "name": "1P_1024x8",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_1024x8_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 146.88,
+  "words": 1024
+ },
+ {
+  "area_um2": 79673.728,
+  "bits": 16,
+  "h_um": 336.46,
+  "name": "1P_1024x16",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_1024x16_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 1024
+ },
+ {
+  "area_um2": 140182.694,
+  "bits": 32,
+  "h_um": 336.46,
+  "name": "1P_1024x32",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_1024x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 416.64,
+  "words": 1024
+ },
+ {
+  "area_um2": 263946.141,
+  "bits": 64,
+  "h_um": 336.46,
+  "name": "1P_1024x64",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_1024x64_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 784.48,
+  "words": 1024
+ },
+ {
+  "area_um2": 261108.288,
+  "bits": 32,
+  "h_um": 626.7,
+  "name": "1P_2048x32",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_2048x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 416.64,
+  "words": 2048
+ },
+ {
+  "area_um2": 491633.616,
+  "bits": 64,
+  "h_um": 626.7,
+  "name": "1P_2048x64",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_2048x64_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 784.48,
+  "words": 2048
+ },
+ {
+  "area_um2": 146413.44,
+  "bits": 8,
+  "h_um": 618.3,
+  "name": "1P_4096x8",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_4096x8_c3_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 236.8,
+  "words": 4096
+ },
+ {
+  "area_um2": 257608.512,
+  "bits": 16,
+  "h_um": 618.3,
+  "name": "1P_4096x16",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_4096x16_c3_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 416.64,
+  "words": 4096
+ },
+ {
+  "area_um2": 939914.928,
+  "bits": 32,
+  "h_um": 618.3,
+  "name": "1P_8192x32",
+  "ports": 1,
+  "src": "RM_IHPSG13_1P_8192x32_c4.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 1520.16,
+  "words": 8192
+ },
+ {
+  "area_um2": 39383.866,
+  "bits": 22,
+  "h_um": 74.87,
+  "name": "2P_64x22",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_64x22_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 526.03,
+  "words": 64
+ },
+ {
+  "area_um2": 52620.882,
+  "bits": 32,
+  "h_um": 74.87,
+  "name": "2P_64x32",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_64x32_c2.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 702.83,
+  "words": 64
+ },
+ {
+  "area_um2": 38147.515,
+  "bits": 8,
+  "h_um": 136.97,
+  "name": "2P_256x8",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_256x8_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 278.51,
+  "words": 256
+ },
+ {
+  "area_um2": 57520.552,
+  "bits": 16,
+  "h_um": 136.97,
+  "name": "2P_256x16",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_256x16_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 419.95,
+  "words": 256
+ },
+ {
+  "area_um2": 96266.625,
+  "bits": 32,
+  "h_um": 136.97,
+  "name": "2P_256x32",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_256x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 702.83,
+  "words": 256
+ },
+ {
+  "area_um2": 57397.331,
+  "bits": 8,
+  "h_um": 219.77,
+  "name": "2P_512x8",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_512x8_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 261.17,
+  "words": 512
+ },
+ {
+  "area_um2": 88481.6,
+  "bits": 16,
+  "h_um": 219.77,
+  "name": "2P_512x16",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_512x16_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 402.61,
+  "words": 512
+ },
+ {
+  "area_um2": 150650.137,
+  "bits": 32,
+  "h_um": 219.77,
+  "name": "2P_512x32",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_512x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 685.49,
+  "words": 512
+ },
+ {
+  "area_um2": 155153.816,
+  "bits": 16,
+  "h_um": 385.37,
+  "name": "2P_1024x16",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_1024x16_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 402.61,
+  "words": 1024
+ },
+ {
+  "area_um2": 264167.281,
+  "bits": 32,
+  "h_um": 385.37,
+  "name": "2P_1024x32",
+  "ports": 2,
+  "src": "RM_IHPSG13_2P_1024x32_c2_bm_bist.lef via research/models/limits.py sram_macros() (SIZE W BY H)",
+  "w_um": 685.49,
+  "words": 1024
+ }
+]

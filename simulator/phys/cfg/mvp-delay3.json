@@ -1,0 +1,10 @@
+{
+  "//": "The MVP chip with the 'Synth strategy -> delay-optimized' timing knob. phys/cfg/mvp.json (AREA 0) meets 20 ns at the typ corner (+1.408 ns) and at the fast corner (+7.888 ns) but NOT at nom_slow_1p08V_125C (-9.895 ns, 527 endpoints, TNS -3044 ns); the worst path is 36 gate levels deep from pio_engine[1].sm_en to pio_engine[1].u_rxf.mem[40]. So: same sources, same 6x4 TT block, same 20 ns, only SYNTH_STRATEGY changes. Its own config and its own metrics/flow.csv row; runs/mvp is left alone so the mvp GDS and netlist that the precheck and `make test-gl` were proven on survive.",
+  "kind": "tt",
+  "top": "tt_um_protocol_emulator",
+  "tiles": "6x4",
+  "sources": ["tt_um_protocol_emulator.v", "pio_chip.sv", "pio_clkdiv.sv", "pio_engine.sv", "pio_fifo.sv", "host_spi.sv"],
+  "clock_period": 20,
+  "tag": "mvp-delay3",
+  "librelane": {"USE_SLANG": true, "SYNTH_STRATEGY": "DELAY 3"}
+}

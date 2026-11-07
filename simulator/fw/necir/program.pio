@@ -1,0 +1,171 @@
+;
+; fw/necir/program.pio -- NEC infrared *receiver* for the MVP chip (task B1-FW-necir).
+;
+; The chip plays the target: the model's NecirTx is the remote and drives one demodulated net,
+; this program decodes it, and every frame it decodes lands in the engine's RX FIFO as one
+; 32-bit word, exactly the 32 bits that were on the wire.  Nothing here drives the net, so the
+; checker's verdict on the wire is a verdict on the bench; what this program is judged on is the
+; words it pushes (fw/necir/test_necir.py compares each one with the model's own encode_frame).
+;
+; The wire, after demodulation (research/ref/protocols/necir/README.md; every number below is
+; one of that table's nominals):
+;
+;   mark 9 ms    space 4.5 ms   32 data bits, LSB first,      trailing
+;   (leader)                     each = 562.5 us mark +       562.5 us
+;                                562.5 us ('0') or             mark
+;                                1687.5 us ('1') space
+;   = address(8) | ~address(8) | command(8) | ~command(8)
+;
+;   repeat code, while a key is held: mark 9 ms, space 2250 us, mark 562.5 us, then idle.
+;   It carries no data, so this program consumes it and pushes nothing.
+;
+; The unit that makes all of that whole
+; ------------------------------------
+; Every element above is a whole multiple of one 562.5 us burst: 16 / 8 / 4 / 3 / 1 units.  So
+; the host divides the clock until one SM cycle is a fraction of a burst -- `S` below is how
+; many SM cycles a burst takes -- and the program measures the wire in SM cycles.  There is no
+; arithmetic in it, and the only counter is the bit counter, which the OSR gives away free (see
+; "Counting the bits").
+;
+; Why S is 7..12 and not 1
+; -----------------------
+; `wait` dates the edge it stopped on no better than one SM cycle, and a '0' bit is only two
+; bursts long, so where the samples may fall is bounded from both sides at once.  The data-space
+; sample has to be late enough that a '0' space (one burst, but up to 1.25 of them at the
+; checker's default 25 % tolerance) has certainly ended -- [1.25*S, ...) -- and early enough that
+; the bit loop is back at `wait 1 pin, 0` while the burst that follows a '0' space is still on the
+; wire, or it would miss that burst and lose its place in the stream: (..., 2*S - 4), where the
+; 4 is the loop's own cost after the sample.  Those bounds cross at S = 7, and S = 1 has no
+; window at all.  fw/necir/driver.py computes all three windows (`sample_window`) and refuses to
+; build a program whose is empty, so the numbers here are checked rather than promised.
+;
+; Sampling
+; --------
+; No `in pins` can time a space by itself: the level has to be read a fixed number of SM cycles
+; after a `wait`, so every decision below is placed there by a delay.  Each sample sits inside the
+; window the checker's tolerance leaves it, counted in SM cycles from the cycle in which the
+; preceding `wait` completed:
+;
+;   +MARK_CYCLES   the burst that began is still high    a leader is 16 bursts, so the sample goes
+;                                                       late in the window a legal leader can
+;                                                       occupy -- every legal leader outlasts it,
+;                                                       and no data burst (one burst) or short
+;                                                       leader reaches it, which is what stops the
+;                                                       program syncing into the middle of a frame
+;   +SPACE_CYCLES  the leader's space has ended           a frame's is 8 bursts and a repeat code's
+;                                                       4, so the sample sits between the two
+;                                                       windows: that is how "a repeat carries no
+;                                                       data" is decided
+;   +K             the data space has ended               high means the space is over, so the bit
+;                                                       is a '0'; low means it outlasted that, so
+;                                                       it is a '1'
+;
+; Counting the bits
+; -----------------
+; `out null, 1` shifts one bit of counting into the OSR without sending anything, and `!osre` is
+; true while fewer than PULL_THRESH = 32 bits have been shifted out.  That is the bit counter,
+; and it is what ends the frame: NEC carries exactly 32 data bits, so the program reads 32 of
+; them and stops.  It never has to recognise the trailing burst or the idle after it -- the one
+; thing a level sample cannot do at this tolerance, because a '1' space of 2.25 bursts and a
+; space of 3.75 bursts bracket every sample point in between.  The bits go into the ISR, where
+; `done` inverts the word and pushes it.
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`, docs/mvp-isa.md):
+;
+;   SHIFTCTRL  AUTOPUSH = 0 and an explicit `push block`: the ISR holds the sampled *levels*,
+;              which are the inverse of the data bits, so `done` inverts the finished word before
+;              pushing it -- autopush would fire on the 32nd `in` and push it before the
+;              inversion.  IN_SHIFTDIR keeps its reset value of 1 (shift right): the ISR is a
+;              shift register, so 32 right shifts leave the first bit shifted in at bit 0 and the
+;              last at bit 31, which is the wire's order, LSB of word 0 first.  PULL_THRESH = 32
+;              with AUTOPULL = 0 is the bit counter's threshold; OUT_SHIFTDIR is unused, the OSR
+;              is never sent.
+;   EXECCTRL   JMP_PIN = the IR pin, so the two `jmp pin` samples read it.  SIDE_EN = 0 and
+;              PINCTRL.SIDESET_COUNT = 0: no side-set at all, because a receiver must not touch
+;              the net it listens to.  The reset PINCTRL is SIDESET_COUNT = 2, which with
+;              SIDE_EN = 0 makes *every* instruction write two pins (docs/mvp-isa.md
+;              `### Delay/side-set field`), so the driver writes 0 there.
+;   PINCTRL    IN_BASE = the IR pin and nothing else: every `wait pin, 0` and the `in pins, 1`
+;              use index 0 of it, and the program issues no `out`, `set` or side-set, so the
+;              engine leaves the IR pin's direction alone and it stays an input.
+;   EXECCTRL   WRAP_BOTTOM / WRAP_TOP from `.wrap_target` / `.wrap`; every path ends in an
+;              explicit `jmp`, so the engine never falls off the end of the program.
+;
+; Running it costs nothing but CLKDIV and those four registers: no TX FIFO word, no forced
+; instruction after the start, no handshake.  A press costs one RX FIFO word and a repeat code
+; costs nothing.
+
+.program necir
+.side_set 0                   ; a receiver writes no pin: see PINCTRL above
+
+; The four numbers fw/necir/driver.py computes and rewrites before assembling (asm/pioasm.py's
+; `.define` cannot be redefined).  S is SM cycles per NEC burst; the other three are where the
+; three samples land, each inside the window `sample_window` derives from the checker's own NEC
+; timings at the requested tolerance.
+.define S 9
+.define MARK_CYCLES 102
+.define SPACE_CYCLES 49
+.define K 12
+
+; An instruction at +1 with delay d runs over +1 .. +1+d, so a run of pads starting at cycle 1
+; and lasting n SM cycles puts the next instruction on cycle n + 1.  Four pads therefore reach any
+; sample up to 129 SM cycles away and two reach 65, which is what lets MARK_CYCLES and
+; SPACE_CYCLES be computed rather than guessed: the pads sum to one cycle less than the sample.
+.define M1 ((MARK_CYCLES - 1) / 4)
+.define M2 ((MARK_CYCLES - 1) / 4)
+.define M3 ((MARK_CYCLES - 1) / 4)
+.define M4 (MARK_CYCLES - 5 - M1 - M2 - M3)
+.define SPACE1 ((SPACE_CYCLES - 1) / 2)
+.define SPACE2 (SPACE_CYCLES - 3 - SPACE1)
+.define BITPAD (K - 2)              ; the pad that puts the data-space sample at +K
+
+.wrap_target leader
+.wrap 26
+
+PUBLIC start:
+leader:                         ; hunting: the line is low, nothing is in progress
+        wait 1 pin, 0           ; a burst begins
+        nop [M1]                ; +MARK_CYCLES: is it still high?  A leader is 16 bursts and
+        nop [M2]                ;   every legal one outlasts this, while nothing inside a frame
+        nop [M3]                ;   does -- a data burst is one burst -- so this is both the
+        nop [M4]                ;   leader check and what keeps the program from syncing into
+        jmp pin frame           ;   the middle of a frame
+        jmp junk                ; too short to be a leader: noise, or a burst that is not one
+
+junk:                           ; a burst too short to be a leader: swallow it, hunt again
+        wait 0 pin, 0           ; the burst ends here
+        jmp leader
+
+frame:                          ; a 9 ms mark ended; its space is running
+        wait 0 pin, 0           ; the mark ends now, and the space is measured from here
+        nop [SPACE1]            ; +SPACE_CYCLES: has the space ended?  8 bursts means a frame,
+        nop [SPACE2]            ;   4 bursts means a repeat code -- NEC's held-key code, which
+        jmp pin rep             ;   carries no data at all
+        mov isr, null           ; a frame: forget the bits a truncated one left in the ISR, so
+        mov osr, null           ;   a short frame cannot corrupt this one's word ...
+        jmp bit                 ;   ... and clear the bit counter (osr_cnt = 0)
+
+rep:                            ; a repeat code: leader, 4 burst space, one 1 burst burst
+        wait 0 pin, 0           ; the burst is over.  No bit is shifted in and nothing is
+        jmp leader              ; pushed: a repeat repeats the frame before it, so the host
+                                 ; already holds that payload
+
+bit:                            ; one data bit: a 1 burst burst, then a 1 or 3 burst space
+        wait 1 pin, 0           ; the burst begins
+        wait 0 pin, 0           ; the burst ended; the data space is running
+        nop [BITPAD]            ; only padding, and it puts the sample at +K
+        in pins, 1              ; the sample.  High means the space is over, and a '0' space is
+                                 ;   one burst, so this shifts a 1 for a '0' bit and a 0 for a
+                                 ;   '1' one: the frame comes out inverted and `done` inverts it
+                                 ;   back, which is why there is no X and no branch in this loop
+        out null, 1             ; count it: osr_cnt reaches 32 on the 32nd data bit ...
+        jmp !osre bit           ;   ... and `!osre` is then false.  That is the frame's end, and
+                                 ;   these three instructions are what has to fit inside the burst
+                                 ;   that follows a '0' space -- see the header's "Why S is 7..12"
+
+done:                           ; 32 bits are in the ISR, inverted
+        mov isr, isr !          ; the sample shifted the level, not the bit: undo that
+        push block              ; the frame goes to the RX FIFO as one 32-bit word.  A blocking
+                                 ;   push is this program's only back pressure: the host has to
+                                 ;   read the FIFO before a fifth frame arrives
+        jmp leader              ; hunt again: the trailing burst and the idle are not our problem

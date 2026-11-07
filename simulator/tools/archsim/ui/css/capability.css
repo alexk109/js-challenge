@@ -1,0 +1,68 @@
+/* Capability styles. Scope every selector under .v-capability (or .cap-side for the side-panel kind `cell`); colours only through tokens. */
+.v-capability .cap-sub { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.v-capability .cap-sub button[aria-selected="true"] { border-color: var(--accent); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.v-capability .mx-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 6px; }
+.v-capability .mx-chip[aria-pressed="true"], .v-capability .mx-allpts[aria-pressed="true"] { border-color: var(--accent); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.v-capability .mx-search input { width: 140px; }
+.v-capability .mx-legend, .v-capability .mx-diffnote { margin: 4px 0; font-size: 12px; }
+.v-capability .mx-allpts { display: none; }
+.v-capability .mx-table { min-width: 100%; border-collapse: separate; border-spacing: 0; }
+.v-capability .mx-table th.mx-wl { font-weight: 500; color: var(--ink); text-align: left; }
+.v-capability .mx-wlcol { min-width: 160px; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.v-capability .mx-wlbtn { border: none; background: none; padding: 0; min-height: 0; font-weight: 600; text-align: left; cursor: pointer; color: var(--ink); }
+.v-capability .mx-wl .mono { display: block; font-size: 11px; }
+.v-capability .mx-scn { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+.v-capability .mx-diff { font-size: 11px; border: 1px solid var(--warn); border-radius: 8px; padding: 0 6px; white-space: nowrap; }
+.v-capability .mx-diff.soft { border-style: dashed; }
+.v-capability .mx-colhead { min-width: 190px; text-align: left; vertical-align: top; }
+.v-capability .mx-colhead.mx-focus-col { box-shadow: inset 0 -3px 0 var(--accent); }
+.v-capability .mx-colname { display: block; border: none; background: none; padding: 0; min-height: 0; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+.v-capability .mx-chipbadge { display: block; border: none; background: none; padding: 2px 0; min-height: 0; font-size: 12px; font-weight: 400; cursor: pointer; text-align: left; color: var(--ink-2); }
+.v-capability .mx-colsub { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+.v-capability .mx-chipcap td { font-size: 12px; color: var(--ink); vertical-align: top; }
+.v-capability .mx-capt { display: block; padding: 2px 4px; background: var(--surface); }
+.v-capability .mx-group th { text-align: left; background: var(--page); border-top: 1px solid var(--grid); padding: 6px 8px; }
+.v-capability .mx-group.sub th { font-weight: 500; font-size: 12px; color: var(--ink-2); padding-left: 24px; background: var(--surface); }
+.v-capability .mx-cell { padding: 0; border-left: 3px solid transparent; vertical-align: top; }
+.v-capability .mx-cell.selected { outline: 2px solid var(--accent); outline-offset: -2px; }
+.v-capability .mx-cell.v-served { border-left-color: var(--good); }
+.v-capability .mx-cell.v-marginal { border-left-color: var(--warn); }
+.v-capability .mx-cell.v-impossible { border-left-color: var(--bad); }
+.v-capability .mx-cellbtn { display: block; width: 100%; height: 100%; text-align: left; border: none; border-radius: 0; background: none; padding: 4px 8px; font: inherit; color: inherit; cursor: pointer; min-height: 32px; }
+.v-capability .mx-cellbtn:hover { background: var(--page); }
+.v-capability .mx-cellbtn > * { display: block; }
+.v-capability .mx-head { font-size: 12px; }
+.v-capability .mx-max { font-size: 11px; color: var(--muted); }
+.v-capability .mx-mixv, .cap-side .mx-mixv { font-weight: 600; white-space: nowrap; }
+.v-capability .mx-mixv.served .ic { color: var(--good); } .v-capability .mx-mixv.marginal .ic { color: var(--warn); } .v-capability .mx-mixv.impossible .ic { color: var(--bad); }
+.v-capability .mx-link, .cap-side .mx-link { border: none; background: none; padding: 0; min-height: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
+.v-capability .mx-pick { margin: 8px 0; }
+.v-capability .mx-pick summary { cursor: pointer; }
+.v-capability .mx-pickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px 12px; margin: 6px 0; }
+.v-capability .mx-how { margin-top: 12px; font-size: 13px; }
+.v-capability .mx-how summary { cursor: pointer; }
+.cap-side { font-size: 13px; }
+.cap-side .mx-blocks { font-size: 11px; border: 1px solid var(--bad); border-radius: 8px; padding: 0 6px; }
+.cap-side .mx-tag { font-size: 11px; border: 1px solid var(--axis); border-radius: 8px; padding: 0 6px; color: var(--ink-2); }
+.cap-side .mx-lim { border: 1px solid var(--grid); border-radius: 4px; padding: 2px 8px; }
+.cap-side .mx-notmodelled { margin-top: 12px; }
+.v-capability .mx-mixchips { margin: 6px 0; }
+.v-capability .mx-refmix .mx-cell { vertical-align: top; }
+.v-capability .mx-refmix .mx-cellbtn > * { display: block; }
+.v-capability .mx-colname-plain { font-weight: 600; }
+.v-capability .mx-pairs { margin-top: 14px; }
+.v-capability .mx-pairs summary { cursor: pointer; }
+.v-capability .mx-pairtable { border-collapse: collapse; font-size: 11px; }
+.v-capability .mx-pairhead { height: 120px; vertical-align: bottom; padding: 2px 0; font-weight: 400; }
+.v-capability .mx-pairhead span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-family: ui-monospace, monospace; }
+.v-capability .mx-pairrow { text-align: right; font-weight: 400; font-family: ui-monospace, monospace; padding: 0 6px; white-space: nowrap; }
+.v-capability .mx-pair { padding: 0; border: 1px solid var(--grid); text-align: center; }
+.v-capability .mx-pairbtn { width: 22px; height: 22px; min-height: 22px; padding: 0; border: none; border-radius: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.v-capability .mx-pair.v-served .mx-pairbtn { color: var(--good); } .v-capability .mx-pair.v-marginal .mx-pairbtn { color: var(--warn); } .v-capability .mx-pair.v-impossible .mx-pairbtn { color: var(--bad); }
+.v-capability .mx-pairbtn:hover { background: var(--page); }
+.v-capability .mx-pair.v-impossible { background: var(--page); }
+@media (max-width: 599px) {
+  .v-capability .mx-allpts { display: inline-block; min-height: 32px; }
+  .v-capability:not(.show-all) .mx-table .mx-col:not(.mx-focus-col) { display: none; }
+  .v-capability .mx-wlcol { min-width: 120px; }
+}

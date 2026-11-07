@@ -1,0 +1,30 @@
+# All-time proof by Yosys' sequential equivalence flow (template: run.py fills @TOP@ / @ORIG@ / @NEW@; @TOP@ is
+# pio_chip or tt_um_protocol_emulator). equiv_make pairs the state registers and outputs of the two flattened designs by
+# name; equiv_induct proves by induction that paired registers stay equal and the outputs agree.
+# equiv_status -assert fails (exit 1) unless every pair is proved.
+plugin -i slang
+read_slang --top orig_@TOP@ @ORIG@
+proc
+flatten
+async2sync
+opt_clean
+rename orig_@TOP@ gold
+design -stash gold_d
+design -reset
+
+read_slang --top @TOP@ @NEW@
+proc
+flatten
+async2sync
+opt_clean
+rename @TOP@ gate
+design -stash gate_d
+design -reset
+
+design -copy-from gold_d -as gold gold
+design -copy-from gate_d -as gate gate
+equiv_make gold gate equiv
+hierarchy -top equiv
+equiv_simple -seq 5
+equiv_induct -seq 5
+equiv_status -assert

@@ -1,0 +1,158 @@
+;
+; fw/quadrature/program.pio -- incremental encoder (ABI) *decoder* for the MVP chip.
+;
+;  The chip is the **target** of this protocol, not the controller: an
+; external encoder drives A, B and I (the AS5047P's ABI outputs, modelled in
+; verif/vip/quadrature.py) and this program watches them, logs every change of the wires and
+; hands the host a stream of samples.  The chip drives nothing: it is a listener, and one of
+; the tests in fw/quadrature/test_quadrature.py is that it stays one -- it opens no OUT, SET
+; or side-set window at all, so `DBG_PADOE` has no uio bit set.
+;
+; The whole program is seven words: a sync, a change detector and a log.
+;
+;     0  start: in pins, 3   sample 0: the state the wires are in when the host starts us
+;     1  mov y, pins         Y = every pin the IN window covers: the change detector's baseline
+;     2  wrap: mov x, pins    X = the same vector, read now        (WRAP_TARGET)
+;     3  moved: jmp x!=y, changed  did anything move?    (WRAP_TOP: not taken -> wraps to 2)
+;     4  changed: in pins, 3  log one sample of I, A, B into the ISR
+;     5  mov y, x            the vector just logged becomes the new baseline
+;     6  jmp wrap            and round the loop
+;
+; Why `mov x, pins` and not `wait`
+; --------------------------------
+; `wait` watches one pin, and a quadrature step moves one of two pins, so a state machine built
+; from `wait`s can only ever watch half of them.  From state 11 (A=1, B=1) the next step is A
+; falling in one direction and B falling in the other, and those two waits are *sequential*
+; instructions: whichever comes second is not armed yet when its edge arrives, so the edge is
+; lost and the program counts x2, not x4.  Interleaving them does not help either, because the
+; two directions need different states and the four Gray states do not fit in what is left of
+; the 32-word IMEM (see "What the alternatives cost" at the end).
+;
+; `mov x, pins` is the alternative and it is the right one: MOV reads `IN_ROT` into X
+; (docs/mvp-isa.md `### Instruction semantics`, MOV, source PINS) and `jmp x!=y` compares two
+; whole registers, so one instruction pair watches *every* pin at once -- either line, or the
+; index.  The ISR is then a genuine sample log, because `in pins, 3` is only reached on a tick
+; where something actually moved: a stopped shaft pushes nothing at all.
+;
+; Timing: an unchanged poll is exactly two SM cycles (`mov x, pins`, `jmp`) because the jmp at
+; address 2 is the wrap top, so its "not taken" case falls off the end of the program and the
+; PC wraps to WRAP_TARGET with no jump.  A logged sample costs five (those two, `in pins, 3`,
+; `mov y, x`, `jmp wrap`).  At CLKDIV = 1.0 on a 50 MHz core that is a 40 ns sampling grid and
+; 10 M samples/s, against a shortest legal step of 535.7 ns (research/ref/protocols/
+; quadrature/as5047p-abi.md D2, derived from the AS5047P's "4000 steps / 1000 pulses per
+; revolution" and its 28 000 RPM limit).  CLKDIV is therefore not needed for speed at all:
+; CLKDIV = 1.0 is already 5.4x faster than the fastest encoder the profile describes.
+; fw/quadrature/driver.py reads both path lengths back out of these words rather than trusting
+; this paragraph.
+;
+; What one sample is
+; -----------------
+; `in pins, 3` takes three *contiguous* pins, bit 0 first, from IN_BASE, so the driver puts
+; IN_BASE on the B pin and A and I on the two pins above it, and one sample is
+;
+;     bit 2 = I, bit 1 = A, bit 0 = B        == (index_level << 2) | ab
+;
+; which is exactly how the reference model names the same three wires (`ab = (a << 1) | b`,
+; `index_level`), so a sample out of the chip is comparable with a state out of the model with
+; no translation at all.  With SHIFTCTRL.IN_SHIFTDIR = 0 (shift left, data enters at the LSB)
+; and AUTOPUSH at PUSH_THRESH = 30, one 32-bit FIFO word carries exactly ten samples: the
+; newest in bits 2:0, the oldest in bits 29:27, bits 31:30 zero.  The index rides along in
+; every sample, so the host knows the index level *per step* and homes the counter on the
+; sample where it rises -- which is where the model's encoder puts count 0 (`_index_at()`
+; opens the window at 0).
+;
+; The first instruction is the sync the whole thing needs.  Sample 0 is the state the wires are
+; in at the moment the host starts the engine, so the host can say "the counter is here" and
+; every edge after it -- including the very first one -- is counted.  Without it the first edge
+; would be swallowed as the decoder's baseline, and a host has no way to read the wires itself:
+; `DBG_PADOUT` reads the level *registers*, which for an input pin are whatever was last written
+; to them (0), not the pin (`docs/mvp-regmap.md` `**DBG_PADOUT**`).
+;
+; So a word is ten samples and never a duplicate, and the host's counting rule is the reference
+; model's own rule: `QuadratureDecoder` in verif/vip/quadrature.py also sees every A/B edge and
+; then applies the Gray successor table, x1/x2/x4 and the index.  That is why direction, the
+; decoding factor and homing live in the host and not here -- one copy of the Gray rule, not
+; two, and the chip spends its seven words on the part that has to run at wire rate.
+;
+; Two honest costs of `mov x, pins`
+; --------------------------------
+; 1. MOV source PINS is `IN_ROT` *unmasked*, so the detector watches all 32 pin positions, not
+;    only the three it logs.  A change on any other pin is logged as a sample whose A/B pair is
+;    unchanged -- the host sees a repeat, which the Gray rule already says is not a step, so it
+;    cannot become motion -- but it does spend one FIFO word and one ISR slot.
+;    `test_a_glitch_on_an_unrelated_pin_is_logged_but_not_counted` pins that down.
+; 2. There is no `wait` in the loop, so the engine polls every two SM cycles forever, including
+;    while the shaft is stopped.  A stopped encoder costs the FIFO nothing (nothing is pushed),
+;    but it does cost core cycles.  Sleeping needs a `wait` on one pin, and a `wait` on one pin
+;    is what this program exists to avoid.
+;
+; What the program cannot do
+; --------------------------
+; Nothing here carries a tick count.  PIO has no free-running counter and no `irq`, and
+; `mov osr, ...` can only invert or reverse, never increment, so the chip records *what* the
+; wires did and never *when*.  The host times the words itself -- it knows the tick of every
+; drain -- and derives speed from that.  A decoder that stamped its edges at the PIO's own rate
+; is the "compressed capture" longshot in docs/architecture-and-longshots.md L11, and this
+; chip is 25 words short of that as well as being 7 words short of a hypervisor.
+;
+; Host configuration (docs/mvp-regmap.md `### Per-engine registers`), all of it built by
+; fw/quadrature/driver.py:
+;
+;   PINCTRL    IN_BASE = B_PIN, with A_PIN = B_PIN + 1 and I_PIN = B_PIN + 2, so one
+;              `in pins, 3` covers all three wires.  Nothing else is configured:
+;              SIDESET_COUNT = OUT_COUNT = SET_COUNT = 0, which is the point of the
+;              "the chip drives nothing" test -- with a window open, one `set pindirs` away
+;              would put this program on the very pins it is reading.
+;   SHIFTCTRL  IN_SHIFTDIR = 0 (data enters at the LSB, so a word's oldest sample is in its
+;              high bits), AUTOPUSH = 1, PUSH_THRESH = 30: ten samples per FIFO word.
+;   EXECCTRL   the wrap window the assembler worked out: WRAP_TARGET = `wrap` (1),
+;              WRAP_TOP = the jmp at 2.
+;   CLKDIV     the 16.8 divider; 1.0 is fast enough for any encoder (see above).
+;
+; Starting, flushing, restarting:
+;
+;   start   the host forces `jmp start` through SMe_INSTR (the only way to set the PC, since
+;           SMe_ADDR is read-only) and then enables the engine with SM_RESTART, as
+;           docs/mvp-regmap.md `### Typical host sequences` says.  SM_RESTART clears the ISR
+;           and the counters, so the log starts empty and the first sample is an edge.
+;   flush   a run that ends mid-word leaves up to nine samples in the ISR, which AUTOPUSH will
+;           never send.  The host forces `push block` (0x8020) through SMe_INSTR to empty the ISR
+;           into the RX FIFO and then forces `mov y, pins` -- the program's own word, the one at
+;           address 1 -- to re-prime the baseline, because a forced push clears the ISR exactly
+;           as AUTOPUSH does and the poll after it would otherwise log a sample that never
+;           moved.  No second sync is needed after a flush: the decoder keeps its baseline across
+;           the word boundary, so the next real edge is the first sample of the next word.
+;           `QuadratureDriver.flush()` does exactly that.
+;
+; Two encoders at once are two engines: nothing in the program depends on its own address (no
+; relative addressing, and the only wrap is the two-instruction poll), so engine 1 runs the same
+; seven words over its own IN_BASE.  That is the second configuration in the test file.
+;
+
+.program quadrature
+.wrap_target wrap
+.wrap moved
+
+start:                         ; the host forces `jmp start`.  The sync comes before the
+        in  pins, 3            ; baseline on purpose: sample 0 has to be taken before the change
+                                ; detector is armed, or the first edge could slip between them.
+                                ; This sample is the state the shaft is in when the host starts
+                                ; us, which is the only way the host can say "the counter is
+                                ; here": it cannot read the wires itself, because DBG_PADOUT
+                                ; reads the level *registers* and an input pin's register is
+                                ; whatever was last written to it (docs/mvp-regmap.md
+                                ; `**DBG_PADOUT**`).  Sample 0 is the decoder's baseline and is
+                                ; not an edge; every edge after it is counted
+        mov  y, pins           ; Y = the pin vector now: what "nothing moved" means
+
+wrap:                          ; .wrap_target: where the PC comes back to, twice per poll
+        mov  x, pins           ; X = the same vector, read now.  MOV source PINS is IN_ROT,
+                                ; unmasked, so this covers every pin, not only the three logged
+moved:                         ; .wrap: taken means the jmp below set this address; not taken
+        jmp  x!=y, changed     ; means the PC leaves the program here and wraps to `wrap`,
+                                ; which is what makes an unchanged poll two SM cycles
+changed:
+        in  pins, 3            ; log one sample: bit 0 = B, bit 1 = A, bit 2 = I.  Ten of these
+                                ; fill the ISR to PUSH_THRESH and AUTOPUSH sends the word
+        mov  y, x              ; Y = the vector just logged: the baseline for the next poll
+        jmp  wrap

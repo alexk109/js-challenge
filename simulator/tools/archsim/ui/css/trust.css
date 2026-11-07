@@ -1,0 +1,33 @@
+/* Trust styles. Scope every selector under .v-trust; colours only through tokens. */
+.v-trust .trust-sec { border-top: 1px solid var(--grid); padding: 8px 0; }
+.v-trust .trust-sec > summary { font-size: 16px; font-weight: 600; cursor: pointer; padding: 4px 0; min-height: 32px; }
+.v-trust h2 { margin: 8px 0; font-size: 15px; }
+.v-trust h3 { margin: 14px 0 6px; font-size: 14px; }
+.v-trust .small { font-size: 12px; }
+.v-trust .r { text-align: right; }
+.v-trust .tbl table { border-collapse: collapse; width: 100%; }
+.v-trust th, .v-trust td { padding: 3px 8px; vertical-align: top; text-align: left; border-bottom: 1px solid var(--grid); }
+.v-trust th.r, .v-trust td.r { text-align: right; }
+.v-trust .linkish { background: none; border: 0; padding: 0; min-height: 24px; color: var(--accent); cursor: pointer; text-decoration: underline; font: inherit; }
+.v-trust .cites { margin: 4px 0; padding-left: 18px; }
+.v-trust .cites q { color: var(--ink-2); }
+.v-trust .ctl-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.v-trust .ctl-row select, .v-trust .ctl-row button { min-height: 32px; }
+.v-trust input.param-input { width: 6.5em; max-width: 100%; min-height: 28px; }
+.v-trust tr.edited td { background: var(--page); }
+.v-trust tr.invalid input { outline: 2px solid var(--bad); }
+.v-trust .err { color: var(--bad); }
+.v-trust .badge.st-edited { border-color: var(--accent); }
+.v-trust .badge.st-isa { border-style: dashed; border-color: var(--warn); }
+.v-trust .badge.cls-match { border-color: var(--good); }
+.v-trust .badge.cls-close { border-color: var(--warn); }
+.v-trust .badge.cls-off { border-color: var(--bad); }
+.v-trust .badge.cls-brackets, .v-trust .badge.cls-identity, .v-trust .badge.cls-info { border-style: dashed; }
+.v-trust .isa-warning { border: 1px dashed var(--warn); padding: 6px 8px; border-radius: 4px; }
+.v-trust .notmodelled { border: 1px solid var(--axis); border-radius: 4px; padding: 4px 12px; margin-top: 12px; }
+.v-trust .chart svg { max-width: 100%; height: auto; }
+.v-trust .chart text { fill: var(--ink-2); font-size: 11px; }
+.v-trust .chart .gridline { stroke: var(--grid); }
+.v-trust .chart .axis { stroke: var(--axis); }
+.v-trust details.items > summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.v-trust .isa-table td, .v-trust .cal-table td { min-width: 0; overflow-wrap: anywhere; }

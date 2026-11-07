@@ -1,0 +1,171 @@
+date,commit,probe,top,params,cells,seq_cells,area_um2,seq_area_um2,comb_area_um2,top_cells
+2026-09-22 12:20,nogit,imem-ff-32x16,probe_imem_ff,DEPTH=32 W=16,1497,528,42627,25866,16761,dfrbpq_1:528 mux2_1:526 mux4_1:115 a21oi_1:77
+2026-09-22 12:20,nogit,imem-ff-32x24,probe_imem_ff,DEPTH=32 W=24,2230,792,63711,38799,24912,dfrbpq_1:792 mux2_1:782 mux4_1:170 a21oi_1:134
+2026-09-22 12:20,nogit,imem-ff-32x32,probe_imem_ff,DEPTH=32 W=32,3010,1056,85039,51732,33307,dfrbpq_1:1056 mux2_1:1061 mux4_1:213 a21oi_1:176
+2026-09-22 12:20,nogit,imem-ff-64x16,probe_imem_ff,DEPTH=64 W=16,2992,1040,84565,50948,33617,dfrbpq_1:1040 mux2_1:1085 mux4_1:217 a21oi_1:164
+2026-09-22 12:20,nogit,imem-ff-64x24,probe_imem_ff,DEPTH=64 W=24,4362,1560,126331,76423,49908,dfrbpq_1:1560 mux2_1:1623 mux4_1:350 o21ai_1:194
+2026-09-22 12:20,nogit,imem-latch-32x24,probe_imem_latch,DEPTH=32 W=24,1553,854,38418,27205,11213,dlhq_1:768 mux4_1:164 dfrbpq_1:54 a21oi_1:138
+2026-09-22 12:20,nogit,imem-latch-64x24,probe_imem_latch,DEPTH=64 W=24,2945,1655,73842,51814,22028,dlhq_1:1536 mux4_1:340 dfrbpq_1:55 a21oi_1:220
+2026-09-22 12:20,nogit,imem-latch-64x16,probe_imem_latch,DEPTH=64 W=16,1983,1127,50115,35237,14878,dlhq_1:1024 mux4_1:238 dfrbpq_1:39 lgcp_1:64
+2026-09-22 12:20,nogit,fifo-4x32,probe_fifo,DEPTH=4 W=32,334,137,10603,6711,3892,dfrbpq_1:137 mux2_1:128 mux4_1:32 nor2b_1:5
+2026-09-22 12:20,nogit,fifo-2x32,probe_fifo,DEPTH=2 W=32,186,69,5323,3380,1943,dfrbpq_1:69 mux2_1:96 o21ai_1:4 xnor2_1:2
+2026-09-22 12:20,nogit,fifo-4x16,probe_fifo,DEPTH=4 W=16,190,73,5704,3576,2128,dfrbpq_1:73 mux2_1:64 mux4_1:16 o21ai_1:6
+2026-09-22 12:20,nogit,shift-32,probe_shiftregs,W=32,1488,76,19394,3723,15671,dfrbpq_1:76 mux2_1:154 o21ai_1:234 mux4_1:46
+2026-09-22 12:20,nogit,shift-16,probe_shiftregs,W=16,695,42,9167,2058,7110,dfrbpq_1:42 mux2_1:57 o21ai_1:106 a21oi_1:89
+2026-09-22 12:20,nogit,seqxy-32,probe_seq_xy,W=32 DEPTH=32,541,74,8358,3625,4733,dfrbpq_1:74 a22oi_1:69 xnor2_1:51 o21ai_1:81
+2026-09-22 12:20,nogit,seqxy-16,probe_seq_xy,W=16 DEPTH=32,307,42,4761,2058,2704,dfrbpq_1:42 o21ai_1:47 a22oi_1:35 xnor2_1:24
+2026-09-22 12:20,nogit,clkdiv,probe_clkdiv,,179,25,2801,1225,1576,dfrbpq_1:25 xnor2_1:21 o21ai_1:18 a22oi_1:11
+2026-09-22 12:20,nogit,lfsr-32,probe_lfsr,W=32,477,70,7406,3429,3977,dfrbpq_1:70 a21oi_1:81 a22oi_1:45 o21ai_1:51
+2026-09-22 12:20,nogit,lfsr-16,probe_lfsr,W=16,256,37,3871,1813,2058,dfrbpq_1:37 a21oi_1:50 a22oi_1:25 o21ai_1:28
+2026-09-22 12:20,nogit,pinmux-win-4sm,probe_pinmux_win,N_SM=4 NP=20 DW=32,5322,168,61892,8230,53662,mux2_1:539 dfrbpq_1:168 a21oi_1:809 o21ai_1:574
+2026-09-22 12:20,nogit,pinmux-win-3sm,probe_pinmux_win,N_SM=3 NP=20 DW=32,4032,136,47486,6662,40824,mux2_1:436 dfrbpq_1:136 a21oi_1:589 nand2_1:533
+2026-09-22 12:20,nogit,pinmux-xbar-4sm,probe_pinmux_xbar,N_SM=4 NP=20 DW=32,8886,796,150757,38995,111762,mux4_1:1335 dfrbpq_1:796 o21ai_1:1896 a21oi_1:1320
+2026-09-22 12:20,nogit,calib-stub,tt_um_protocol_emulator,,108,22,1849,1078,771,dfrbpq_1:22 nor2_1:14 a21oi_1:11 a22oi_1:9
+2026-09-22 12:28,nogit,imem-shared-ff-64x24x4,probe_imem_shared,DEPTH=64 W=24 NPORT=4 LATCH=0,7900,1632,193455,79950,113505,dfrbpq_1:1632 mux4_1:1412 mux2_1:1836 a21oi_1:747
+2026-09-22 12:28,nogit,imem-shared-latch-64x24x4,probe_imem_shared,DEPTH=64 W=24 NPORT=4 LATCH=1,6511,1727,141093,55341,85752,mux4_1:1390 dlhq_1:1536 a21oi_1:848 dfrbpq_1:127
+2026-09-22 12:28,nogit,imem-shared-latch-128x24x4,probe_imem_shared,DEPTH=128 W=24 NPORT=4 LATCH=1,13719,3328,276189,104509,171679,mux4_1:2536 dlhq_1:3072 a21oi_1:1990 o21ai_1:1665
+2026-09-22 15:26,nogit,imem-srlatch-32x24,probe_imem_srlatch,DEPTH=32 W=24,2228,54,27720,2645,25075,a21oi_1:1620 mux4_1:181 dfrbpq_1:54 o21ai_1:93
+2026-09-22 15:26,nogit,imem-srlatch-64x24,probe_imem_srlatch,DEPTH=64 W=24,4319,55,52262,2694,49567,a21oi_1:3229 mux4_1:368 dfrbpq_1:55 o21ai_1:174
+2026-10-01 22:15,c2fb981,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1404,204,22144,9994,12150,dfrbpq_1:204 a21oi_1:242 o21ai_1:184 mux4_1:39
+2026-10-01 22:22,c2fb981,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1404,204,22144,9994,12150,dfrbpq_1:204 a21oi_1:242 o21ai_1:184 mux4_1:39
+2026-10-01 22:22,c2fb981,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1320,210,21088,10288,10800,dfrbpq_1:210 a21oi_1:215 o21ai_1:208 inv_1:162
+2026-10-01 22:22,c2fb981,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1352,210,22201,10288,11913,dfrbpq_1:210 a21oi_1:178 mux4_1:40 o21ai_1:158
+2026-10-01 22:22,c2fb981,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3727,647,62688,31696,30992,dfrbpq_1:647 a21oi_1:664 o21ai_1:540 mux4_1:110
+2026-10-01 22:22,c2fb981,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:22,c2fb981,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:27,c2fb981,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1404,204,22144,9994,12150,dfrbpq_1:204 a21oi_1:242 o21ai_1:184 mux4_1:39
+2026-10-01 22:27,c2fb981,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1320,210,21088,10288,10800,dfrbpq_1:210 a21oi_1:215 o21ai_1:208 inv_1:162
+2026-10-01 22:27,c2fb981,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1352,210,22201,10288,11913,dfrbpq_1:210 a21oi_1:178 mux4_1:40 o21ai_1:158
+2026-10-01 22:27,c2fb981,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3727,647,62688,31696,30992,dfrbpq_1:647 a21oi_1:664 o21ai_1:540 mux4_1:110
+2026-10-01 22:27,c2fb981,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:27,c2fb981,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:31,14e4902,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1374,204,22025,9994,12031,dfrbpq_1:204 a21oi_1:208 mux4_1:41 o21ai_1:167
+2026-10-01 22:31,14e4902,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1313,210,21057,10288,10769,dfrbpq_1:210 a21oi_1:198 o21ai_1:192 mux4_1:23
+2026-10-01 22:31,14e4902,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1772,350,33671,17146,16525,dfrbpq_1:350 mux2_1:182 mux4_1:71 a21oi_1:198
+2026-10-01 22:31,14e4902,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3675,647,62685,31696,30989,dfrbpq_1:647 a21oi_1:660 o21ai_1:526 mux4_1:121
+2026-10-01 22:31,14e4902,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:32,14e4902,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:36,0142b34,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1374,204,22025,9994,12031,dfrbpq_1:204 a21oi_1:208 mux4_1:41 o21ai_1:167
+2026-10-01 22:36,0142b34,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1313,210,21057,10288,10769,dfrbpq_1:210 a21oi_1:198 o21ai_1:192 mux4_1:23
+2026-10-01 22:36,0142b34,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1772,350,33671,17146,16525,dfrbpq_1:350 mux2_1:182 mux4_1:71 a21oi_1:198
+2026-10-01 22:36,0142b34,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3675,647,62685,31696,30989,dfrbpq_1:647 a21oi_1:660 o21ai_1:526 mux4_1:121
+2026-10-01 22:37,0142b34,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:37,0142b34,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:38,0142b34,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1374,204,22025,9994,12031,dfrbpq_1:204 a21oi_1:208 mux4_1:41 o21ai_1:167
+2026-10-01 22:38,0142b34,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1313,210,21057,10288,10769,dfrbpq_1:210 a21oi_1:198 o21ai_1:192 mux4_1:23
+2026-10-01 22:38,0142b34,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1772,350,33671,17146,16525,dfrbpq_1:350 mux2_1:182 mux4_1:71 a21oi_1:198
+2026-10-01 22:38,0142b34,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3675,647,62685,31696,30989,dfrbpq_1:647 a21oi_1:660 o21ai_1:526 mux4_1:121
+2026-10-01 22:38,0142b34,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:39,0142b34,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-04 12:28,b3f4836,witness-24,probe_witness,NP=24 TW=16 W=32,845,133,13623,6516,7107,dfrbpq_1:133 a21oi_1:154 xnor2_1:85 nand2_1:145
+2026-10-04 12:35,91ec26b,witness-8,probe_witness,NP=8 TW=16 W=32,808,133,13149,6516,6634,dfrbpq_1:133 xnor2_1:111 a21oi_1:120 nand2_1:115
+2026-10-04 12:36,91ec26b,clause-32x24,probe_clause,NP=24 NCL=32 TW=16 RW=32,26280,983,389562,48156,341406,mux4_1:3172 dfrbpq_1:983 a22oi_1:4228 a21oi_1:3724
+2026-10-04 12:52,35f858d,clause-16x8,probe_clause,NP=8 NCL=16 TW=16 RW=32,6759,486,102318,23809,78509,dfrbpq_1:486 mux4_1:524 a22oi_1:904 a221oi_1:423
+2026-10-04 12:52,35f858d,clause-4x24,probe_clause,NP=24 NCL=4 TW=16 RW=32,4971,532,79069,26062,53007,dfrbpq_1:532 mux4_1:380 a22oi_1:880 a21oi_1:583
+2026-10-04 13:03,6cf43a4,clause-1x24,probe_clause,NP=24 NCL=1 TW=16 RW=32,2647,484,45847,23711,22136,dfrbpq_1:484 a22oi_1:511 mux4_1:94 inv_1:480
+2026-10-04 13:03,6cf43a4,witness-24,probe_witness,NP=24 TW=16 W=32,2222,517,40777,25327,15450,dfrbpq_1:517 a22oi_1:327 nand2_1:266 a21oi_1:197
+date,commit,probe,top,params,cells,seq_cells,area_um2,seq_area_um2,comb_area_um2,top_cells
+2026-09-22 12:20,nogit,imem-ff-32x16,probe_imem_ff,DEPTH=32 W=16,1497,528,42627,25866,16761,dfrbpq_1:528 mux2_1:526 mux4_1:115 a21oi_1:77
+2026-09-22 12:20,nogit,imem-ff-32x24,probe_imem_ff,DEPTH=32 W=24,2230,792,63711,38799,24912,dfrbpq_1:792 mux2_1:782 mux4_1:170 a21oi_1:134
+2026-09-22 12:20,nogit,imem-ff-32x32,probe_imem_ff,DEPTH=32 W=32,3010,1056,85039,51732,33307,dfrbpq_1:1056 mux2_1:1061 mux4_1:213 a21oi_1:176
+2026-09-22 12:20,nogit,imem-ff-64x16,probe_imem_ff,DEPTH=64 W=16,2992,1040,84565,50948,33617,dfrbpq_1:1040 mux2_1:1085 mux4_1:217 a21oi_1:164
+2026-09-22 12:20,nogit,imem-ff-64x24,probe_imem_ff,DEPTH=64 W=24,4362,1560,126331,76423,49908,dfrbpq_1:1560 mux2_1:1623 mux4_1:350 o21ai_1:194
+2026-09-22 12:20,nogit,imem-latch-32x24,probe_imem_latch,DEPTH=32 W=24,1553,854,38418,27205,11213,dlhq_1:768 mux4_1:164 dfrbpq_1:54 a21oi_1:138
+2026-09-22 12:20,nogit,imem-latch-64x24,probe_imem_latch,DEPTH=64 W=24,2945,1655,73842,51814,22028,dlhq_1:1536 mux4_1:340 dfrbpq_1:55 a21oi_1:220
+2026-09-22 12:20,nogit,imem-latch-64x16,probe_imem_latch,DEPTH=64 W=16,1983,1127,50115,35237,14878,dlhq_1:1024 mux4_1:238 dfrbpq_1:39 lgcp_1:64
+2026-09-22 12:20,nogit,fifo-4x32,probe_fifo,DEPTH=4 W=32,334,137,10603,6711,3892,dfrbpq_1:137 mux2_1:128 mux4_1:32 nor2b_1:5
+2026-09-22 12:20,nogit,fifo-2x32,probe_fifo,DEPTH=2 W=32,186,69,5323,3380,1943,dfrbpq_1:69 mux2_1:96 o21ai_1:4 xnor2_1:2
+2026-09-22 12:20,nogit,fifo-4x16,probe_fifo,DEPTH=4 W=16,190,73,5704,3576,2128,dfrbpq_1:73 mux2_1:64 mux4_1:16 o21ai_1:6
+2026-09-22 12:20,nogit,shift-32,probe_shiftregs,W=32,1488,76,19394,3723,15671,dfrbpq_1:76 mux2_1:154 o21ai_1:234 mux4_1:46
+2026-09-22 12:20,nogit,shift-16,probe_shiftregs,W=16,695,42,9167,2058,7110,dfrbpq_1:42 mux2_1:57 o21ai_1:106 a21oi_1:89
+2026-09-22 12:20,nogit,seqxy-32,probe_seq_xy,W=32 DEPTH=32,541,74,8358,3625,4733,dfrbpq_1:74 a22oi_1:69 xnor2_1:51 o21ai_1:81
+2026-09-22 12:20,nogit,seqxy-16,probe_seq_xy,W=16 DEPTH=32,307,42,4761,2058,2704,dfrbpq_1:42 o21ai_1:47 a22oi_1:35 xnor2_1:24
+2026-09-22 12:20,nogit,clkdiv,probe_clkdiv,,179,25,2801,1225,1576,dfrbpq_1:25 xnor2_1:21 o21ai_1:18 a22oi_1:11
+2026-09-22 12:20,nogit,lfsr-32,probe_lfsr,W=32,477,70,7406,3429,3977,dfrbpq_1:70 a21oi_1:81 a22oi_1:45 o21ai_1:51
+2026-09-22 12:20,nogit,lfsr-16,probe_lfsr,W=16,256,37,3871,1813,2058,dfrbpq_1:37 a21oi_1:50 a22oi_1:25 o21ai_1:28
+2026-09-22 12:20,nogit,pinmux-win-4sm,probe_pinmux_win,N_SM=4 NP=20 DW=32,5322,168,61892,8230,53662,mux2_1:539 dfrbpq_1:168 a21oi_1:809 o21ai_1:574
+2026-09-22 12:20,nogit,pinmux-win-3sm,probe_pinmux_win,N_SM=3 NP=20 DW=32,4032,136,47486,6662,40824,mux2_1:436 dfrbpq_1:136 a21oi_1:589 nand2_1:533
+2026-09-22 12:20,nogit,pinmux-xbar-4sm,probe_pinmux_xbar,N_SM=4 NP=20 DW=32,8886,796,150757,38995,111762,mux4_1:1335 dfrbpq_1:796 o21ai_1:1896 a21oi_1:1320
+2026-09-22 12:20,nogit,calib-stub,tt_um_protocol_emulator,,108,22,1849,1078,771,dfrbpq_1:22 nor2_1:14 a21oi_1:11 a22oi_1:9
+2026-09-22 12:28,nogit,imem-shared-ff-64x24x4,probe_imem_shared,DEPTH=64 W=24 NPORT=4 LATCH=0,7900,1632,193455,79950,113505,dfrbpq_1:1632 mux4_1:1412 mux2_1:1836 a21oi_1:747
+2026-09-22 12:28,nogit,imem-shared-latch-64x24x4,probe_imem_shared,DEPTH=64 W=24 NPORT=4 LATCH=1,6511,1727,141093,55341,85752,mux4_1:1390 dlhq_1:1536 a21oi_1:848 dfrbpq_1:127
+2026-09-22 12:28,nogit,imem-shared-latch-128x24x4,probe_imem_shared,DEPTH=128 W=24 NPORT=4 LATCH=1,13719,3328,276189,104509,171679,mux4_1:2536 dlhq_1:3072 a21oi_1:1990 o21ai_1:1665
+2026-09-22 15:26,nogit,imem-srlatch-32x24,probe_imem_srlatch,DEPTH=32 W=24,2228,54,27720,2645,25075,a21oi_1:1620 mux4_1:181 dfrbpq_1:54 o21ai_1:93
+2026-09-22 15:26,nogit,imem-srlatch-64x24,probe_imem_srlatch,DEPTH=64 W=24,4319,55,52262,2694,49567,a21oi_1:3229 mux4_1:368 dfrbpq_1:55 o21ai_1:174
+2026-10-01 22:15,c2fb981,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1404,204,22144,9994,12150,dfrbpq_1:204 a21oi_1:242 o21ai_1:184 mux4_1:39
+2026-10-01 22:22,c2fb981,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1404,204,22144,9994,12150,dfrbpq_1:204 a21oi_1:242 o21ai_1:184 mux4_1:39
+2026-10-01 22:22,c2fb981,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1320,210,21088,10288,10800,dfrbpq_1:210 a21oi_1:215 o21ai_1:208 inv_1:162
+2026-10-01 22:22,c2fb981,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1352,210,22201,10288,11913,dfrbpq_1:210 a21oi_1:178 mux4_1:40 o21ai_1:158
+2026-10-01 22:22,c2fb981,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3727,647,62688,31696,30992,dfrbpq_1:647 a21oi_1:664 o21ai_1:540 mux4_1:110
+2026-10-01 22:22,c2fb981,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:22,c2fb981,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:27,c2fb981,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1404,204,22144,9994,12150,dfrbpq_1:204 a21oi_1:242 o21ai_1:184 mux4_1:39
+2026-10-01 22:27,c2fb981,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1320,210,21088,10288,10800,dfrbpq_1:210 a21oi_1:215 o21ai_1:208 inv_1:162
+2026-10-01 22:27,c2fb981,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1352,210,22201,10288,11913,dfrbpq_1:210 a21oi_1:178 mux4_1:40 o21ai_1:158
+2026-10-01 22:27,c2fb981,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3727,647,62688,31696,30992,dfrbpq_1:647 a21oi_1:664 o21ai_1:540 mux4_1:110
+2026-10-01 22:27,c2fb981,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:27,c2fb981,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:31,14e4902,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1374,204,22025,9994,12031,dfrbpq_1:204 a21oi_1:208 mux4_1:41 o21ai_1:167
+2026-10-01 22:31,14e4902,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1313,210,21057,10288,10769,dfrbpq_1:210 a21oi_1:198 o21ai_1:192 mux4_1:23
+2026-10-01 22:31,14e4902,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1772,350,33671,17146,16525,dfrbpq_1:350 mux2_1:182 mux4_1:71 a21oi_1:198
+2026-10-01 22:31,14e4902,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3675,647,62685,31696,30989,dfrbpq_1:647 a21oi_1:660 o21ai_1:526 mux4_1:121
+2026-10-01 22:31,14e4902,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:32,14e4902,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:36,0142b34,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1374,204,22025,9994,12031,dfrbpq_1:204 a21oi_1:208 mux4_1:41 o21ai_1:167
+2026-10-01 22:36,0142b34,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1313,210,21057,10288,10769,dfrbpq_1:210 a21oi_1:198 o21ai_1:192 mux4_1:23
+2026-10-01 22:36,0142b34,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1772,350,33671,17146,16525,dfrbpq_1:350 mux2_1:182 mux4_1:71 a21oi_1:198
+2026-10-01 22:36,0142b34,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3675,647,62685,31696,30989,dfrbpq_1:647 a21oi_1:660 o21ai_1:526 mux4_1:121
+2026-10-01 22:37,0142b34,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:37,0142b34,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-01 22:38,0142b34,fc-exec-e2,fc_exec,E=2 NCTX=1 FIFO=0,1374,204,22025,9994,12031,dfrbpq_1:204 a21oi_1:208 mux4_1:41 o21ai_1:167
+2026-10-01 22:38,0142b34,fc-exec-e1,fc_exec,E=1 NCTX=1 FIFO=0,1313,210,21057,10288,10769,dfrbpq_1:210 a21oi_1:198 o21ai_1:192 mux4_1:23
+2026-10-01 22:38,0142b34,fc-exec-e2-fifo,fc_exec,E=2 NCTX=1 FIFO=1,1772,350,33671,17146,16525,dfrbpq_1:350 mux2_1:182 mux4_1:71 a21oi_1:198
+2026-10-01 22:38,0142b34,fc-exec-e2-ctx4,fc_exec,E=2 NCTX=4 FIFO=0,3675,647,62685,31696,30989,dfrbpq_1:647 a21oi_1:660 o21ai_1:526 mux4_1:121
+2026-10-01 22:38,0142b34,fc-table-latch-64x64,probe_imem_latch,DEPTH=64 W=64,7935,4295,192612,134696,57916,dlhq_1:4096 mux4_1:819 a21oi_1:762 dfrbpq_1:135
+2026-10-01 22:39,0142b34,fc-table-latch-shared-64x64x2,probe_imem_shared,DEPTH=64 W=64 NPORT=2 LATCH=1,11606,4359,253360,137831,115529,dlhq_1:4096 mux4_1:1611 a21oi_1:1454 dfrbpq_1:199
+2026-10-04 12:35,204f942,padsafe-18,probe_pad_safety,NP=18 LW=12 TW=20 LOGN=4,2269,416,37568,20379,17189,dfrbpq_1:416 o21ai_1:366 nor2b_1:195 nand2_1:239
+2026-10-04 12:35,204f942,padsafe-8,probe_pad_safety,NP=8 LW=12 TW=20 LOGN=4,1085,208,18417,10190,8227,dfrbpq_1:208 o21ai_1:142 nand2_1:109 nor2_1:95
+2026-10-04 13:03,79d5ff5,pinshadow-18,probe_pin_shadow,NP=18 D=3 TW=20 LOGN=4,1356,365,27391,17881,9510,dfrbpq_1:365 and2_1:153 o21ai_1:143 a21oi_1:133
+2026-10-04 13:09,79d5ff5,pinshadow-8,probe_pin_shadow,NP=8 D=3 TW=20 LOGN=4,874,237,17958,11610,6348,dfrbpq_1:237 mux4_1:27 a21oi_1:88 and2_1:75
+2026-10-04 13:20,948c5ab,padsafe-1,probe_pad_safety,NP=1 LW=12 TW=20 LOGN=4,250,56,4578,2743,1834,dfrbpq_1:56 o21ai_1:34 a21oi_1:21 nand3_1:19
+2026-10-04 13:20,948c5ab,pinshadow-1,probe_pin_shadow,NP=1 D=3 TW=20 LOGN=4,517,143,10891,7005,3885,dfrbpq_1:143 mux4_1:24 o21ai_1:85 nand2_1:102
+2026-10-05 10:17,5605fcd,replay-sig-18,probe_replay_sig,NP=18 W=32,498,128,10877,6271,4607,dfrbpq_1:128 mux2_1:96 xnor2_1:64 and2_1:96
+2026-10-05 10:17,5605fcd,replay-sig-24,probe_replay_sig,NP=24 W=32,504,128,10964,6271,4694,dfrbpq_1:128 mux2_1:96 xnor2_1:64 and2_1:96
+2026-10-05 10:18,5605fcd,replay-shadow-18,probe_replay_shadow,NP=18 D=3 TW=20 DEPTH=512,57023,19716,1596802,965863,630939,dfrbpq_1:19716 mux2_1:20071 mux4_1:3910 a21oi_1:3574
+2026-10-05 10:18,5605fcd,replay-shadow-24,probe_replay_shadow,NP=24 D=3 TW=20 DEPTH=512,65648,22854,1849081,1119590,729491,dfrbpq_1:22854 mux2_1:23318 mux4_1:4581 a21oi_1:4066
+2026-10-05 10:18,5605fcd,replay-window-64x18,probe_replay_window,TW=20 NP=18 DEPTH=64,7047,2456,198730,120316,78413,dfrbpq_1:2456 mux2_1:2462 mux4_1:511 a21oi_1:370
+2026-10-05 10:19,5605fcd,replay-window-128x18,probe_replay_window,TW=20 NP=18 DEPTH=128,14092,4889,396731,239506,157225,dfrbpq_1:4889 mux2_1:5057 mux4_1:981 a21oi_1:805
+2026-10-05 10:19,5605fcd,replay-window-256x18,probe_replay_window,TW=20 NP=18 DEPTH=256,28234,9754,793042,477837,315205,dfrbpq_1:9754 mux2_1:10221 mux4_1:1946 a21oi_1:1651
+2026-10-05 10:19,5605fcd,replay-window-512x18,probe_replay_window,TW=20 NP=18 DEPTH=512,55662,19483,1581786,954449,627337,dfrbpq_1:19483 mux2_1:20282 mux4_1:4049 a21oi_1:3170
+2026-10-05 10:20,5605fcd,replay-window-512x24,probe_replay_window,TW=20 NP=24 DEPTH=512,64536,22555,1830525,1104942,725582,dfrbpq_1:22555 mux2_1:23468 mux4_1:4631 a21oi_1:3719
+2026-10-05 10:20,5605fcd,replay-edgefile-18,probe_replay_edgefile,NP=18 D=3 TW=20,1947,558,38893,27336,11558,dfrbpq_1:558 o21ai_1:680 inv_1:361 and2_1:199
+2026-10-05 10:20,5605fcd,replay-edgefile-24,probe_replay_edgefile,NP=24 D=3 TW=20,2562,744,51886,36448,15439,dfrbpq_1:744 o21ai_1:791 and2_1:285 inv_1:448
+2026-10-05 10:20,5605fcd,replay-module-18,probe_replay_module,NP=18 D=3 TW=20 W=32,1196,340,24674,16656,8018,dfrbpq_1:340 and2_1:182 a21oi_1:170 xnor2_1:100
+2026-10-05 10:20,5605fcd,replay-module-24,probe_replay_module,NP=24 D=3 TW=20 W=32,1378,406,29021,19889,9132,dfrbpq_1:406 and2_1:244 a21oi_1:189 xnor2_1:112
+2026-10-05 10:25,1776dc4,replay-sig-18,probe_replay_sig,NP=18 W=32,498,128,10877,6271,4607,dfrbpq_1:128 mux2_1:96 xnor2_1:64 and2_1:96
+2026-10-05 10:25,1776dc4,replay-sig-24,probe_replay_sig,NP=24 W=32,504,128,10964,6271,4694,dfrbpq_1:128 mux2_1:96 xnor2_1:64 and2_1:96
+2026-10-05 10:25,1776dc4,replay-shadow-18,probe_replay_shadow,NP=18 D=3 TW=20 DEPTH=512,57023,19716,1596802,965863,630939,dfrbpq_1:19716 mux2_1:20071 mux4_1:3910 a21oi_1:3574
+2026-10-05 10:26,1776dc4,replay-shadow-24,probe_replay_shadow,NP=24 D=3 TW=20 DEPTH=512,65648,22854,1849081,1119590,729491,dfrbpq_1:22854 mux2_1:23318 mux4_1:4581 a21oi_1:4066
+2026-10-05 10:26,1776dc4,replay-shadow-18-nw,probe_replay_shadow,NP=18 D=3 TW=20 DEPTH=2,936,328,22538,16068,6470,dfrbpq_1:328 mux2_1:114 and2_1:197 o21ai_1:84
+2026-10-05 10:26,1776dc4,replay-shadow-24-nw,probe_replay_shadow,NP=24 D=3 TW=20 DEPTH=2,1132,406,27575,19889,7685,dfrbpq_1:406 mux2_1:132 and2_1:262 o21ai_1:108
+2026-10-05 10:26,1776dc4,replay-window-64x18,probe_replay_window,TW=20 NP=18 DEPTH=64,7047,2456,198730,120316,78413,dfrbpq_1:2456 mux2_1:2462 mux4_1:511 a21oi_1:370
+2026-10-05 10:26,1776dc4,replay-window-128x18,probe_replay_window,TW=20 NP=18 DEPTH=128,14092,4889,396731,239506,157225,dfrbpq_1:4889 mux2_1:5057 mux4_1:981 a21oi_1:805
+2026-10-05 10:26,1776dc4,replay-window-256x18,probe_replay_window,TW=20 NP=18 DEPTH=256,28234,9754,793042,477837,315205,dfrbpq_1:9754 mux2_1:10221 mux4_1:1946 a21oi_1:1651
+2026-10-05 10:27,1776dc4,replay-window-512x18,probe_replay_window,TW=20 NP=18 DEPTH=512,55662,19483,1581786,954449,627337,dfrbpq_1:19483 mux2_1:20282 mux4_1:4049 a21oi_1:3170
+2026-10-05 10:28,1776dc4,replay-window-512x24,probe_replay_window,TW=20 NP=24 DEPTH=512,64536,22555,1830525,1104942,725582,dfrbpq_1:22555 mux2_1:23468 mux4_1:4631 a21oi_1:3719
+2026-10-05 10:28,1776dc4,replay-edgefile-18,probe_replay_edgefile,NP=18 D=3 TW=20,1947,558,38893,27336,11558,dfrbpq_1:558 o21ai_1:680 inv_1:361 and2_1:199
+2026-10-05 10:28,1776dc4,replay-edgefile-24,probe_replay_edgefile,NP=24 D=3 TW=20,2562,744,51886,36448,15439,dfrbpq_1:744 o21ai_1:791 and2_1:285 inv_1:448
+2026-10-05 10:28,1776dc4,replay-module-18,probe_replay_module,NP=18 D=3 TW=20 W=32,1196,340,24674,16656,8018,dfrbpq_1:340 and2_1:182 a21oi_1:170 xnor2_1:100
+2026-10-05 10:28,1776dc4,replay-module-24,probe_replay_module,NP=24 D=3 TW=20 W=32,1378,406,29021,19889,9132,dfrbpq_1:406 and2_1:244 a21oi_1:189 xnor2_1:112
+2026-10-05 10:10,8558092,dpll-min,probe_dpll,CW=32 FRAME_BITS=10 WIN=8 LADDER=0 FRAC_BITS=8,5187,52,54610,2547,52063,xnor2_1:728 mux2_1:360 nor2_1:784 nand2_1:636
+2026-10-05 10:11,8558092,dpll-win1,probe_dpll,CW=32 FRAME_BITS=10 WIN=1 LADDER=0 FRAC_BITS=8,4999,45,51752,2204,49548,xnor2_1:713 nor2_1:761 a21oi_1:493 mux2_1:242
+2026-10-05 10:11,8558092,dpll-win4,probe_dpll,CW=32 FRAME_BITS=10 WIN=4 LADDER=0 FRAC_BITS=8,5007,48,52129,2351,49778,xnor2_1:719 nor2_1:694 nand2_1:643 mux2_1:255
+2026-10-05 10:11,8558092,dpll-cw24,probe_dpll,CW=24 FRAME_BITS=10 WIN=8 LADDER=0 FRAC_BITS=8,3196,52,34851,2547,32304,xnor2_1:417 mux2_1:256 nor2_1:420 a21oi_1:326
+2026-10-05 10:12,8558092,dpll-cw16,probe_dpll,CW=16 FRAME_BITS=10 WIN=8 LADDER=0 FRAC_BITS=8,1566,52,17637,2547,15090,xnor2_1:180 dfrbpq_1:52 o21ai_1:157 nor2_1:195
+2026-10-05 10:12,8558092,dpll-ladder,probe_dpll,CW=32 FRAME_BITS=10 WIN=8 LADDER=12 FRAC_BITS=8,5020,52,52541,2547,49994,xnor2_1:718 mux2_1:289 nor2_1:712 nand2_1:657
+2026-10-05 10:13,8558092,dpll-const,probe_dpll,CW=32 FRAME_BITS=10 WIN=8 LADDER=0 FRAC_BITS=8 SM_CYCLES=16,159,52,3556,2547,1009,dfrbpq_1:52 and2_1:23 a21o_1:14 o21ai_1:12
+2026-10-05 10:13,8558092,dpll-const-cw24,probe_dpll,CW=24 FRAME_BITS=10 WIN=8 LADDER=0 FRAC_BITS=8 SM_CYCLES=16,169,52,3578,2547,1031,dfrbpq_1:52 and2_1:23 nand2_1:25 o21ai_1:12
+2026-10-05 10:13,8558092,dpll-const-win1,probe_dpll,CW=32 FRAME_BITS=10 WIN=1 LADDER=0 FRAC_BITS=8 SM_CYCLES=16,130,45,3010,2204,806,dfrbpq_1:45 and2_1:22 a21o_1:14 a21oi_1:8
+2026-10-05 16:38,3fe231b9,adpll-dco-127,adpll_dco,N=127 NFINE=4 NTAPW=7,262,0,3126,0,3126,mux2_1:131 inv_1:127 dlygate4sd1_1:4
+2026-10-05 16:38,3fe231b9,adpll-dco-63,adpll_dco,N=63 NFINE=4 NTAPW=6,134,0,1617,0,1617,mux2_1:67 inv_1:63 dlygate4sd1_1:4
+2026-10-05 16:38,3fe231b9,adpll-dco-31,adpll_dco,N=31 NFINE=4 NTAPW=5,70,0,862,0,862,mux2_1:35 inv_1:31 dlygate4sd1_1:4

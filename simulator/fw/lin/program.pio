@@ -1,0 +1,146 @@
+;
+; LIN 2.x commander (LIN 1.x: master) for the MVP chip.
+;
+; One SM cycle per bit time.  Every bit instruction has delay 0, so a bit lasts exactly one
+; CLKDIV period and CLKDIV is the only thing that sets the bit rate: fw/lin/driver.py builds
+; the divisor from the words below (`sm_cycles_per_bit`, read out of the assembled program)
+; and hands the host the word stream to push.
+;
+; The wire
+; --------
+; LIN is one wire, open drain: 0 is dominant (driven), 1 is recessive (released, the bus
+; pull-up holds it up).  The MVP has no transceiver and no OE inversion
+; (docs/mvp-isa.md `### Open drain`, `## Differences from RP2040` item 10), so the program
+; emulates open drain the way docs/mvp-isa.md prescribes: the pin's *level* register stays at
+; its reset value 0 and the program drives the *direction*.  `side 1` pulls the line low,
+; `side 2` releases it, and the data bits come out of the OSR through `out pindirs, 1`.
+;
+; The LIN pin must therefore be one of the bidirectional uio pins, 0..7: PINDIRS cannot drive
+; the input-only (8..12) or output-only (13..17) protocol pins (`### The 18 protocol pins`).
+;
+; The side-set channel
+; --------------------
+; `.side_set 1 opt pindirs` is the whole trick, and it is worth reading twice:
+;
+;   * SIDESET_COUNT = 2 -- one side-set *data* bit plus the `opt` enable bit -- with
+;     EXECCTRL.SIDE_EN = 1, so the top bit of the side-set field is an enable and the low one
+;     is data.  The assembler writes that enable itself for any non-zero operand
+;     (asm/pioasm.py:468), so `side 1` means "enable, data 1" and `side 2` means
+;     "enable, data 0": a side-set with a zero data bit.  An instruction with no `side`
+;     operand has an all-zero field, the enable is 0, and **no side-set happens at all** --
+;     which is what lets `out pindirs, 1` own the pin for a data bit.  Side-set wins over the
+;     OUT/SET channel within one cycle (`docs/mvp-isa.md` `### Pin writes`), so a side-set on
+;     a data-bit instruction would overwrite the very bit the OSR just asked for.
+;   * SIDE_PINDIR = 1, so the side-set writes pin *directions*: 1 = drive (the line goes to
+;     the level register, which is 0), 0 = release.  A LIN wire is never driven high, which
+;     is also what lets a future responder read the same pin back (a node that cannot release
+;     the wire can never listen to it).
+;   * SIDESET_COUNT = 2 also leaves the delay field three bits wide, so an instruction lasts
+;     1..8 SM cycles.  The 13-bit-time break field therefore costs two instructions
+;     (8 + 6 = 14 bit times) rather than one; that is the price of the `opt` bit and it is
+;     why the break is not a single `nop ... [15]`.
+;
+; SHIFTCTRL: AUTOPULL = 1, PULL_THRESH = 8, OUT_SHIFTDIR = 1 (its reset value, shift right).
+; A LIN byte field is a start bit, eight data bits **least significant first** and a stop bit,
+; so the eight `out pindirs, 1` of a field shift one OSR bit each and the eighth brings the
+; shift count to the threshold, which refills the OSR from the TX FIFO in the same SM cycle
+; (`docs/mvp-isa.md` `### Instruction semantics`, OUT).  The host pushes every byte
+; right-justified with its bits already inverted for the direction register
+; (`fw/lin/driver.py` `wire_word`), because 1 = drive = dominant = a zero data bit.
+;
+; PINCTRL: SIDESET_BASE = OUT_BASE = SET_BASE = the LIN pin, SIDESET_COUNT = 2, OUT_COUNT = 1
+; and SET_COUNT = 1, so all three channels cover that one pin and nothing else.
+; IN_BASE is unused (a commander never reads the wire) but points at the pin as well.
+;
+; What the host does
+; ------------------
+; Per frame, all through `SMe_INSTR`, which is the only way to set the PC
+; (`docs/mvp-isa.md` `### Enable, restart`):
+;
+;   set x, 1              two byte fields in the header (sync 0x55, protected identifier)
+;   set y, N              response byte fields still to send: 0 = header only (a responder
+;                         on the bus answers), N > 0 = the chip publishes N fields itself
+;                         (N data bytes and the checksum), see `jmp y-- resp`
+;   jmp frame             start
+;   TX FIFO: ~0x55, ~PID [, ~data..., ~checksum]
+;
+; Both counters are decremented by the loop's stop-bit instruction, which doubles as the stop
+; bit and as the branch, so a byte field is exactly ten SM cycles -- ten bit times, the
+; nominal T_Frame_Nominal -- with no inter-byte space at all.
+;
+; The pin
+; -------
+; No `wait`, no `in`, no IRQ.  A commander with nothing to say leaves the wire recessive in
+; `idle` forever, and the host sees where it is in `SMe_ADDR`; there is no `irq wait` to park
+; in (docs/mvp-isa.md `## Differences from RP2040` item 3).
+;
+
+.program lin
+.side_set 1 opt pindirs
+
+.wrap_target idle
+.wrap idle
+
+; ---------------------------------------------------------------------------------
+; frame: the break field, the break delimiter, then the header's two byte fields.
+; Entered by the host's forced `jmp frame`.
+; ---------------------------------------------------------------------------------
+frame:
+        nop side 1 [7]                 ; break, part 1: 8 bit times dominant
+        nop side 1 [5]                 ; break, part 2: 6 more, so 14 in all --
+                                       ;   the spec floor is 13 (tBREAK) and one bit time of
+                                       ;   margin covers the rounding of the bit period
+        nop side 2 [1]                 ; break delimiter: 2 bit times recessive (>= 1,
+                                       ;   tDELIM), which is also the first 2 bit times of
+                                       ;   the space in front of the sync field
+
+; ---------------------------------------------------------------------------------
+; One header byte field: start bit, 8 data bits LSB first, stop bit.  10 SM cycles.
+; X counts the fields still to send (2 for the header), and the stop-bit instruction is the
+; `jmp x--` that ends the field, so the counter costs no bit time.
+; ---------------------------------------------------------------------------------
+hdr:
+        pull block side 1              ; start bit (side-set: drive, dominant) and the next
+                                       ;   OSR word in the same SM cycle.  A `pull` here is a
+                                       ;   barrier while the OSR is empty (autopull keeps
+                                       ;   osr_cnt at 0 after a refill) and a real pop
+                                       ;   otherwise, which is what primes the first field
+                                       ;   after a restart and refills between fields.
+        out pindirs, 1                 ; data bit 0 ... bit 7, one per SM cycle
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        jmp x-- hdr side 2             ; stop bit (recessive); X-- and loop while X != 0
+
+; ---------------------------------------------------------------------------------
+; The header is over.  Y is the number of response byte fields the host said it would
+; publish: 0 falls through to `idle` and leaves the wire to a responder, anything else
+; publishes.  The two SM cycles here are the response space, and the delay makes them two
+; bit times, which is the response space a real commander leaves (a cluster that agrees on
+; more is satisfied too; tRS's own floor is zero).
+; ---------------------------------------------------------------------------------
+        jmp y-- resp side 2 [1]
+
+idle:
+        jmp idle side 2               ; recessive, forever.  Also the wrap target.
+
+; ---------------------------------------------------------------------------------
+; One response byte field: identical to the header's, 10 SM cycles.  Y counts the fields,
+; so the host sets Y to (data bytes + the checksum) before the frame starts.
+; ---------------------------------------------------------------------------------
+resp:
+        pull block side 1              ; start bit + OSR refill
+        out pindirs, 1                 ; data bit 0 ... bit 7
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        out pindirs, 1
+        jmp y-- resp side 2            ; stop bit; Y-- and loop while Y != 0
+        jmp idle side 2                ; the response is over: back to the idle wire

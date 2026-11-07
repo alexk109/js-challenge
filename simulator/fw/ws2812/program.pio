@@ -1,0 +1,162 @@
+;
+; WS2812 / WS2812B controller firmware for the MVP chip.
+;
+; The chip plays the CONTROLLER: it drives the single data line of a WS2812 chain and the
+; pixels are the targets (verif/vip/ws2812.py: Ws2812Tx is the controller, Ws2812Pixel the
+; strip).  There is no clock, no handshake and no reply; the only thing the wire carries is
+; the length of each high pulse, so every edge below is made by the side-set channel.
+;
+; WHAT THE DATASHEET ASKS FOR (research/ref/protocols/ws2812/, page 3 of the 9-Apr-2013
+; Worldsemi sheet, quoted in verif/vip/ws2812.py `ws2812_timings`):
+;
+;   one pixel = 24 bits, GRB, each byte MSB first        page 5, "Composition of 24bit data"
+;   TH + TL   = 1.25 us +/- 600 ns  (800 kbit/s)          page 3, "Data transfer time"
+;   T0H = 0.4 us +/- 150 ns   a 0 is a SHORT high         page 3, "0 code, high voltage time"
+;   T1H = 0.8 us +/- 150 ns   a 1 is a LONG high          page 3, "1 code, high voltage time"
+;   T0L = 0.85 us +/- 150 ns                              page 3, "0 code, low voltage time"
+;   T1L = 0.45 us +/- 150 ns                              page 3, "1 code, low voltage time"
+;   reset = the line low for more than 50 us              pages 3 and 4, "Above 50us"
+;
+; At 50 MHz one tick is 20 ns, so the four windows are T0H 13..27 ticks, T1H 33..47,
+; T0L <= 50, T1L <= 30 and a bit period of 33..92 ticks.  Those are the numbers the two
+; programs below are built to hit; fw/ws2812/driver.py re-derives every one of them out of
+; the assembled words, and fw/ws2812/test_ws2812.py measures them back off the wire.
+;
+; HOW A BIT IS MADE
+;
+; The whole protocol is one high pulse per bit, so `.side_set 1` carries the line: with
+; PINCTRL.SIDESET_COUNT = 1 and EXECCTRL.SIDE_EN = 0 (both written by the driver, the SIDE_EN
+; value being the register's reset value) `side 1` drives SIDESET_BASE high and `side 0` low,
+; on every instruction, and the delay field of the same word says for how long
+; (docs/mvp-isa.md `### Delay/side-set field`).  SIDESET_COUNT = 1 leaves the delay field
+; 4 bits wide, so one instruction is 1..16 SM cycles; that is the granularity every chunk
+; below is a multiple of.  The pin must be a bidirectional uio pin (0..7), because that is
+; the only kind PINDIRS can drive (docs/mvp-isa.md `### The 18 protocol pins`), and the host
+; makes it an output before the engine starts (fw/ws2812/driver.py `init_pins`).
+;
+; `out x, 1` shifts the next bit of the OSR into X and is the instruction that starts every
+; high pulse; `jmp !x zero` reads that X on the next SM cycle and chooses the length of the
+; pulse.  The two paths differ only after that branch, which is what keeps the *start* of
+; every high pulse on the same grid no matter what the bit was:
+;
+;   bit = 0    out x,1 + jmp !x           -> high, then the `zero` branch drives it low
+;   bit = 1    the same two, plus `one`   -> high, high, then the `low` branch drives it low
+;
+; The `pull block` at the end of the loop is where the engine waits for the next pixel word,
+; and it carries `side 0`: a WS2812 transmitter that ran out of data has to leave the line
+; LOW, because a low of more than 50 us *is* the reset code, and the engine parks on this
+; instruction until the host pushes another word.  A stalled instruction keeps the side-set
+; it last wrote (docs/mvp-isa.md `### Stalls, delay and side-set`), so the line stays low
+; between frames.  That is also why no instruction that can stall carries `side 1`.
+;
+; The last thing the loop does is count bits: `jmp !osre bitloop` goes back for the next bit
+; of the *same* word while `!osre` holds, which is `osr_cnt < PULL_THRESH`
+; (docs/mvp-isa.md `### Field values`, JMP Condition).  With `PULL_THRESH = 24`, one bit per
+; `out x, 1` and one word per pull, the OSR count runs 0..23 and the 24th bit sends the jmp
+; on to the `pull block`.  Nothing else in the ISA counts bits, so `PULL_THRESH = 24` and
+; `!osre` are the whole of the bit counter; the driver writes that register (see below), and
+; the datasheet's "24bit data" is why it is 24.
+;
+; HOST CONFIGURATION (docs/mvp-regmap.md `### Per-engine registers`, all written by
+; fw/ws2812/driver.py):
+;
+;   SHIFTCTRL  OUT_SHIFTDIR = 0 (shift LEFT) so `out x, 1` sends OSR bit 31 first, which is
+;              how the datasheet wants a word out: most significant bit first, green byte
+;              first.  AUTOPULL = 0, because the blocking `pull` is what holds the line low
+;              between frames and it must be able to stall.  PULL_THRESH = 24, which is what
+;              makes `jmp !osre` count 24 bits instead of 32.
+;   PINCTRL    SIDESET_COUNT = 1, every window one pin wide on the data pin.
+;   EXECCTRL   SIDE_EN = 0, WRAP_BOTTOM = 0 = `bitloop`, WRAP_TOP = the last instruction,
+;              which is the `pull block`: a word that is already in the FIFO falls straight
+;              back into the loop through the wrap.
+;   CLKDIV     1.0 for the numbers below.  The chunk durations are in SM cycles, so CLKDIV
+;              is what sets the wire speed; the driver derives it from the bit length the
+;              words give (see `bit_ticks`).
+;
+; One `.program` per speed.  Both send the same GRB words from the same TX FIFO and both
+; need the same host sequence, so only the chunk delays differ.
+;
+
+; ---------------------------------------------------------------------------------------------
+; ws2812: the datasheet's own rate.  63 ticks per bit = 1.26 us = 793.7 kbit/s at 50 MHz --
+; one tick longer than the 1.25 us of "TH+TL=1.25us +/-600ns", and well inside that window,
+; with every edge in the middle of its own:
+;
+;   a 0 bit   high 20 (13..27)   low 43 (<= 50)    period 63 (33..92)
+;   a 1 bit   high 40 (33..47)   low 23 (<= 30)    period 63
+;
+; Nine words of the 32 the engine has.
+.program ws2812
+.side_set 1
+
+.define HI      9       ; 10 cycles of high per chunk: high(0) = 20, high(1) = 4 * 10 = 40
+.define LOW_Z1  9       ; 10 cycles, zero path only
+.define LOW_Z2  9       ; 10 cycles, zero path only: low(0) = 20 + low(1) = 43
+.define LOW_C   7       ; 8 cycles, common tail: low(1) = 8 + 15 = 23
+.define LOW_J   14      ; 15 cycles, the `!osre` test that ends every bit
+.define LOW_P   0       ; the pull itself: 1 cycle, once per *word* and not once per bit
+
+bitloop:
+        out x, 1             side 1 [HI]         ; high 10, X <- the bit
+        jmp !x zero          side 1 [HI]         ; high 20: a 0 bit is complete here
+one:
+        jmp one_more         side 1 [HI]         ; high 30
+one_more:
+        jmp low              side 1 [HI]         ; high 40: a 1 bit is complete here
+zero:
+        nop                  side 0 [LOW_Z1]     ; low 10
+        nop                  side 0 [LOW_Z2]     ; low 20
+low:
+        nop                  side 0 [LOW_C]      ; low 8
+more:
+        jmp !osre bitloop    side 0 [LOW_J]      ; low 15; another bit left in this word?
+;  --- The 24 bits of this word are gone, so fetch the next one.  This is the program's entry
+;  --- point as well (`jmp start`, forced through SMe_INSTR): it is where a fresh engine and a
+;  --- finished word both arrive.  WRAP_TOP = 8 = this address, WRAP_BOTTOM = 0 = `bitloop`,
+;  --- so a word that is already in the FIFO falls straight back into the loop.
+PUBLIC start:
+        pull block           side 0 [LOW_P]      ; the OSR is empty: fetch, or stall low
+
+; ---------------------------------------------------------------------------------------------
+; ws2812_fast: the fastest this program shape can legally drive the wire.  40 ticks per bit
+; = 0.8 us = 1.25 Mbit/s, twice the datasheet's rate but still inside every window it gives,
+; because TH+TL is 1.25 us +/- 600 ns and T0H/T1H are +/- 150 ns:
+;
+;   a 0 bit   high 13 (13..27)   low 27 (<= 50)    period 40
+;   a 1 bit   high 33 (33..47)   low  7 (<= 30)    period 40
+;
+; Both high times sit exactly on the floor of their window (260 ns and 660 ns against nominals
+; of 400 ns and 800 ns).  That is where the floor of this family of programs is, and the
+; arithmetic is worth writing down: a 0 bit's high and a 1 bit's high *share* their first two
+; chunks -- the branch that tells them apart is after them, because one instruction has one
+; side-set value for both paths -- so those two chunks have to sum to at least 17, not 13, for
+; a third 16-cycle chunk to be able to reach T1H's 33.  17 + 16 + a one-cycle low is 34 ticks,
+; 1.47 Mbit/s, and that is this ISA's ceiling for a WS2812 line; 40 ticks is what reaching
+; both windows with whole chunks costs here.  Eight words of the 32.
+.program ws2812_fast
+.side_set 1
+
+.define HI_A   5       ; 6 cycles
+.define HI_B   6       ; 7 cycles: high(0) = 13, the shortest T0H the datasheet allows
+.define HI_C   15      ; 16 cycles
+.define HI_D   3       ; 4 cycles: high(1) = 33, the shortest T1H the datasheet allows
+.define LOW_Z1 9       ; 10 cycles, zero path only
+.define LOW_Z2 9       ; 10 cycles, zero path only: low(0) = 20 + low(1) = 27
+.define LOW_J  6       ; 6 cycles, the `!osre` test: low(1) = 7
+.define LOW_P  0       ; the pull itself: 1 cycle
+
+bitloop:
+        out x, 1             side 1 [HI_A]       ; high 6, X <- the bit
+        jmp !x zero          side 1 [HI_B]       ; high 13: a 0 bit is complete here
+one:
+        jmp one_more         side 1 [HI_C]       ; high 29
+one_more:
+        jmp low              side 1 [HI_D]       ; high 33: a 1 bit is complete here
+zero:
+        nop                  side 0 [LOW_Z1]     ; low 10
+        nop                  side 0 [LOW_Z2]     ; low 20
+low:
+more:
+        jmp !osre bitloop    side 0 [LOW_J]      ; low 7; another bit left in this word?
+PUBLIC start:
+        pull block           side 0 [LOW_P]      ; the OSR is empty: fetch, or stall low

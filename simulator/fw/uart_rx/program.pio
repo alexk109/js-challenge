@@ -1,0 +1,99 @@
+;
+; fw/uart_rx/program.pio -- 8N1 UART receiver for the MVP chip.
+;
+; Started from the pico-examples uart_rx.pio idea, then rewritten for this chip.  What the
+; spec forced (docs/mvp-isa.md, docs/mvp-regmap.md):
+;
+;   * No IRQ: there are no IRQ flags, so a framing error cannot raise one.  It is reported in
+;     the RX FIFO instead -- the byte goes in first, then a word with bits 23:0 nonzero
+;     (FRAMING_ERROR below) says "the byte just before me had a low stop bit".  A data word
+;     always has bits 23:0 clear, so the two can never be confused.
+;   * T_IN = 3 always (no INPUT_SYNC_BYPASS) and T_OUT = 1, so a pin change reaches IN_VEC
+;     four core cycles after it is driven: the first instruction after a `wait` that
+;     completes is already four cycles late.  Every sample below is placed relative to that.
+;   * The delay field is 5 bits, so one bit time cannot be one delay.  The host divides the
+;     clock so that one bit time is S SM cycles, and the loop below spends exactly S SM cycles
+;     per bit; S and the loop are therefore a pair, and driver.py rewrites `.define S`.
+;
+; Timing, in SM cycles counted from the cycle in which `wait 0 pin, 0` completes (cycle 0).
+; One bit time is S SM cycles and the engine's cycle grid is quantised to the bit time, so a
+; sample taken at SM cycle m lands (m/S + d) of a bit after the falling edge that opened the
+; frame, where d in [0, 1/S) is the phase of that grid:
+;
+;   SM cycle 0           wait 0 pin, 0      the start bit
+;   SM cycle S/2         jmp pin, reject   start-bit validation, 0.5 .. 0.5+1/S into it
+;   SM cycle 1.5S + i    in pins, 1 [S-1]  data bit i, (i+0.5) .. (i+0.5+1/S) into it
+;   SM cycle 9.25S       jmp pin, good_stop  stop bit, 0.25 .. 0.25+1/S into it
+;
+; The start bit is validated in its middle, so a low pulse shorter than half a bit -- a glitch,
+; or noise on an idle line -- is high again by then and is thrown away; that is the whole of
+; the glitch rejection, and it is why the validation is not folded into the first `in pins`.
+; Every data bit is likewise sampled in the middle of its own bit time, so the transmitter may
+; be up to 0.5/9.5 = 5% off nominal before a sample can leave its bit, at any speed.  The stop
+; bit is sampled a quarter of the way in rather than in the middle: that buys 0.25S SM cycles for
+; the walk back to `hunt`, and that is what lets the next frame start immediately after the
+; previous one at -2% baud.
+;
+; Dropped from the RP2040 example: `set x, 8` and the counter that went with it (X only holds
+; the error marker here), `.side_set 1 opt` (there is nothing to side-set on a receive pin),
+; the wrap over the fall-through tail (every path here jumps back to `hunt` explicitly) and
+; `irq 4 rel`, which is a NOP on this chip: harmless, but the framing-error flag is lost.
+;
+; What the host has to live with: the RX FIFO is four words deep, and a UART line keeps running
+; while this program is stalled in a blocking `push`, so bytes that arrive after the fifth are
+; lost.  And a frame that ends with a low stop bit leaves the line low, so the next start bit
+; has to be preceded by one idle bit for the receiver to find it -- exactly as after a break.
+;
+; The RX pin is whichever pin the host puts in IN_BASE, JMP_PIN and SET_BASE; the program only
+; ever uses index 0 of those windows.
+;
+.program uart_rx
+.define S 16                 ; SM cycles per bit time: CLKDIV = ticks_per_bit / S
+.define FRAMING_ERROR 1      ; FIFO word pushed after a byte whose stop bit was low
+.wrap_target idle
+.wrap reject
+
+set     pindirs, 0           ; release the RX pin: it is an input (uio pins only)
+
+idle:                         ; the line is high: idle, or a break has just ended
+        wait     1 pin, 0
+
+hunt:                         ; a 1 -> 0 transition: the start bit
+        wait     0 pin, 0
+
+; Clear the ISR (a rejected start bit may have left bits in it) while the rest of the start bit
+; runs out, so that the validation below is in the middle of it.
+        in      null, 32 [S/2-2]
+
+; Validate the start bit in its middle: a low pulse shorter than half a bit is high again by
+; then and is rejected, which is all the glitch rejection there is.
+        jmp     pin, reject [S-1]
+
+d0:     in      pins, 1 [S-1]           ; data bit 0
+        in      pins, 1 [S-1]           ; data bit 1
+        in      pins, 1 [S-1]           ; data bit 2
+        in      pins, 1 [S-1]           ; data bit 3
+        in      pins, 1 [S-1]           ; data bit 4
+        in      pins, 1 [S-1]           ; data bit 5
+        in      pins, 1 [S-1]           ; data bit 6
+        in      pins, 1 [S*3/4-1]       ; data bit 7, with a short delay: see the header
+
+; The stop bit.  `jmp pin` is taken when the pin is high, so the jump is the good frame and
+; the fall-through is the framing error.
+        jmp     pin, good_stop
+
+framing_error:                ; the stop bit was low
+        push block              ; the byte goes in whatever happened ...
+        set     x, FRAMING_ERROR
+        mov     isr, x
+        push block              ; ... followed by the marker that flags it
+        jmp     idle
+
+good_stop:                    ; the stop bit was high: a good frame
+        push block              ; the byte, left justified at bits 31:24
+        wait     1 pin, 0       ; (fall through) idle again ...
+        wait     0 pin, 0       ; ... and hunt for the next start bit
+        jmp     hunt
+
+reject:                       ; the low pulse was too short to be a start bit
+        jmp     hunt

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Run a command inside your EDA toolchain (Yosys, OpenROAD, LibreLane, ...).
+# Optional: only the synth / flow / gl / power backends use it.
+#   - Default: run the command directly (tools must be on PATH).
+#   - To run through a container or env wrapper, set BENCH_TOOLCHAIN_WRAPPER, e.g.
+#       BENCH_TOOLCHAIN_WRAPPER="docker run --rm -v $PWD:$PWD -w $PWD my-eda-image"
+set -euo pipefail
+if [ -n "${BENCH_TOOLCHAIN_WRAPPER:-}" ]; then
+  # shellcheck disable=SC2086
+  exec $BENCH_TOOLCHAIN_WRAPPER "$@"
+fi
+exec "$@"

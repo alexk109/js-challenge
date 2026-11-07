@@ -1,0 +1,13 @@
+[project]
+name = "bench"
+version = "0.1.0"
+description = "Simulator for the Jane Street protocol emulator ASIC competition design."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = ["pytest>=7", "quickjs==1.19.4", "cocotb==2.0.1", "pyyaml>=6"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = ["long: slow test (flow, RTL sweeps, gate level, power); not run by default"]
+addopts = "-p no:cacheprovider"

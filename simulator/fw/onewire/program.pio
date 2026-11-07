@@ -1,0 +1,168 @@
+; 1-Wire (DS18B20) master for the MVP chip (task B1-FW-onewire).
+;
+; The chip is the MASTER: the models in verif/vip/onewire.py are the slave
+; (Ds18b20Target answers the reset with a presence pulse and drives read slots), so
+; this program is the side that has to put a reset, time slots and a sample point on
+; one open-drain line.
+;
+; Where the pin is
+; ---------------
+; One net, one pin, and it must be a uio pin: open drain is a direction, and only the
+; uio pins have one (docs/mvp-isa.md `### Open drain`). The level register of that pin
+; is never written, so it stays at its reset value 0 and the program only ever toggles
+; the direction -- exactly what the RP2040 PIO does for an open-drain bus.
+;
+;   SET window, 1 pin, SET_BASE = DQ_PIN, SET_COUNT = 1
+;       `set pindirs, 1` pulls the line low, `set pindirs, 0` releases it. This is the
+;       only pin write in the program; there is no OUT window and no side-set, which
+;       leaves the whole 5-bit delay field (0..31 SM cycles) for timing.
+;   IN window, IN_BASE = DQ_PIN
+;       `in pins, 1` samples the line, 25 SM cycles into every slot that has a short
+;       low (a write-1 or a read slot). 1-Wire samples a read slot 15..60 us in
+;       (DS18B20 "DS18B20 Samples 15 typ 30"), so the sample sits in the middle of
+;       that window and inside the 16..66 us the slave model drives a read-0 over.
+;   `wait` is not used: a PIO that cannot report anything to the host (there is no
+;       IRQ in the MVP, docs/mvp-isa.md `## Differences from RP2040`) has nothing to do
+;       with a level it can only see for itself, and every timing here is a delay.
+;
+; One loop for writing and for reading
+; ------------------------------------
+; A time slot is: pull the line low, release it, and (for a read) sample it 25 SM
+; cycles in. The only difference between the three kinds of slot is how long the line
+; stays low:
+;
+;   write 1   low 6 SM cycles (the DS18B20 tLOW1 window is 1..15 us)
+;   write 0   low 65 SM cycles (tLOW0 is 60..120 us)
+;   read      low 6 SM cycles, then the slave drives it or does not
+;
+; so the bit has to decide how long the low is, and the slot has to be 75 SM cycles
+; long whichever bit it is. Both are one compare and two copies of the same pad:
+;
+;   out x, 1        the OSR bit lands in X and the OSR shifts right (OUT_SHIFTDIR=1),
+;                   which is 1-Wire's own order: least significant bit first
+;   jmp x-- w_zero  a taken JMP and a JMP that falls through both cost one SM cycle,
+;                   so the `set pindirs, 1` that starts the low runs at the same offset
+;                   of the slot in both branches. That is what keeps the period at 75
+;                   SM cycles for a 0 and for a 1, which is what tSLOT measures.
+;   w_one           release after 6 SM cycles and idle out the slot, sampling at 25
+;   w_zero          hold the low for 65 SM cycles, then release (tREC)
+;   jmp !osre w_slot   eight slots per TX word: PULL_THRESH is 8, `out x, 1` counts
+;                   one bit per slot into osr_cnt, and `pull block` resets it to 0
+;
+; Read slots are write-1 slots whose bit happens to be 0 (a released line) and whose
+; sample is kept: the host pushes a word of 0x00000000 per read byte, turns AUTOPUSH
+; on and pushes ISR to the RX FIFO every eight samples, one byte per word. Nothing in
+; IMEM has to know which of the two it is, which is what keeps the program inside 32
+; words: a separate read loop would cost six more.
+;
+; Why this differs from an RP2040 one-wire program (docs/mvp-isa.md `### Open drain`,
+; `## Differences from RP2040`):
+;   * No `set gpio_inv, 1` (it does not exist and the assembler rejects the mnemonic):
+;     the direction sense is already "1 pulls the line low", so nothing is inverted.
+;   * No IRQ, so there is no `irq wait` to park in and no SMx_ADDR-based handshake
+;     with an interrupt: the host sees the engine sitting on `pull block`, and that
+;     instruction is the phase boundary the host synchronises to.
+;   * 32 words of IMEM, so there is one bit loop instead of a write loop and a read
+;     loop, and the two pads (reset, wait for the line) are a pair of `jmp x--` loops.
+;
+; The host protocol (fw/onewire/driver.py builds the words):
+;   one 32-bit TX word per byte, bit k = the k-th slot of that byte, least significant
+;   first, and 1 = pull the line low, because `out pindirs, 1` writes a direction. So
+;   the host pushes the *inverted* byte (~b & 0xff): a 1-bit on the wire is a released
+;   line, which is direction 0. A read byte is 0x00000000.
+;   Y is unused. The engine blocks on `pull block` until the host pushes the next word,
+;   which is how the host paces the engine and how it knows a byte boundary is safe.
+; SHIFTCTRL: AUTOPULL off (the program pulls explicitly, and `pull block` is a no-op
+; with autopull on and a full OSR), PULL_THRESH 8, OUT_SHIFTDIR 1, IN_SHIFTDIR 0 so a
+; read byte lands in bits 7:0 in wire order, AUTOPUSH set by the host only for a read
+; phase (see `read_phase` in the driver).
+
+.program onewire
+.wrap_target init
+.wrap next_byte
+
+.define PUBLIC DQ_PIN 0
+
+; ---------------------------------------------------------------------------------
+; The park. The line is released and stays that way, so the bus reads high and a host
+; that has nothing to do leaves the engine here.
+; ---------------------------------------------------------------------------------
+init:
+    set pindirs, 0            ; release: an open-drain line idles high
+    jmp init
+
+; ---------------------------------------------------------------------------------
+; A reset pulse, entered by forcing `jmp reset` (SMx_INSTR: SMx_ADDR is read-only and
+; there is no IRQ, docs/mvp-isa.md `### EXEC`).
+;
+; How long the line stays low: `set pindirs, 1 [1]` is 2 SM cycles, `set x, 16` is 1, and
+; the loop below retires in 32 SM cycles *seventeen* times -- `jmp x--` runs the n-th
+; iteration with X = 0 as well, it just does not branch, and an instruction still costs its
+; delay (docs/mvp-isa.md `### Instruction semantics`, JMP). So 2 + 1 + 17 x 32 = 547 SM
+; cycles, which at CLKDIV 50 is 547 us. DS18B20 tRSTL is a 480 us minimum and AN126 H's
+; maximum is 640 us, so the pulse sits inside the window with room on both sides. That
+; 547 is also why this is a tight design: it is the longest single timing in the program,
+; and it is what fixes the fastest legal divider at 47 (547 x 47 x 20 ns = 514 us).
+; ---------------------------------------------------------------------------------
+reset:
+    set pindirs, 1 [1]        ; pull the line low: a reset pulse starts
+    set x, 16                 ; the trip count of the loop below
+rst_low:
+    jmp x-- rst_low [31]      ; 32 SM cycles, 17 times: see the header
+    set pindirs, 0            ; release: the slave answers with its presence pulse
+    ; The presence check. The pulse starts 15..60 us after this release and lasts
+    ; 60..240 us, so a master that samples the line once has to do it where *every*
+    ; legal pulse is still low: 60 us (the latest a pulse may start) to 75 us (the
+    ; earliest any pulse may end, 15 + 60). The sample is 69 SM cycles after the release,
+    ; which at CLKDIV 50 is 69 us, and it reads the pad three core cycles earlier, so it
+    ; lands at 68.9 us: inside that window with room for a whole SM cycle of divider phase
+    ; either side. A 0 in the RX FIFO therefore means "a device answered".
+    nop [31]                  ; 32 SM cycles, out to 33 after the release
+    nop [31]                  ; 32 SM cycles, out to 65
+    nop [3]                   ; 4 SM cycles, out to 69
+    in pins, 1 [4]            ; sample the line 69 SM cycles after the release
+    push block                ; and hand the bit to the host. This is the only way the
+                              ; host learns about it: there is no IRQ, no status bit for
+                              ; a pin, and no way to write the ISR from outside
+                              ; (docs/mvp-regmap.md `### Address map`).
+    set x, 16                 ; the wait for tRSTH: 480 us is the minimum from the
+rst_rsth:                    ; reset release to the first slot of the transaction,
+    jmp x-- rst_rsth [31]     ; and 545 SM cycles is 545 us at CLKDIV 50
+    ; falls through into the bit loop, which pulls the ROM command the host pushed
+
+; ---------------------------------------------------------------------------------
+; The byte boundary, and the only place the engine ever stops: `pull block` stalls
+; with the line released until the host pushes the next word. Every phase change goes
+; through here, which is why the host can watch SM0_ADDR and know that no slot is half
+; way through.
+; ---------------------------------------------------------------------------------
+w_byte:
+    pull block
+
+; ---------------------------------------------------------------------------------
+; One time slot. See the header for why the two branches have to be the same length.
+; ---------------------------------------------------------------------------------
+w_slot:
+    out x, 1 [1]              ; X = the OSR bit, OSR >>= 1, one slot counted
+    jmp x-- w_zero            ; 1 = pull the line low (a 0-bit), 0 = release
+w_one:                        ; a write-1 or a read slot: a short low, then idle
+    set pindirs, 1 [5]        ; 6 SM cycles low: tLOW1 is 1..15 us
+    set pindirs, 0 [5]        ; release, 6 SM cycles: the line is high from here on
+    nop [9]                   ; 10 SM cycles: 16 SM cycles into the slot
+    in pins, 1 [3]            ; sample 25 SM cycles in, i.e. 25 us at CLKDIV 50
+    nop [31]                  ; 32 SM cycles: out to 61
+    nop [11]                  ; 12 SM cycles: out to 73
+    jmp w_join                ; the other branch is 73 SM cycles long as well
+w_zero:                       ; a write-0: the line stays low for the whole low time
+    set pindirs, 1 [5]        ; the same 6 SM cycles, so both slots start together
+    nop [31]                  ; 32 SM cycles
+    nop [26]                  ; 27 SM cycles: 65 SM cycles of low, i.e. 65 us, which
+    set pindirs, 0 [5]        ; is inside tLOW0's 60..120 us, and tREC's 1 us minimum
+w_join:
+    jmp !osre w_slot          ; eight slots per word; then fall through to the next byte
+next_byte:
+    jmp w_byte                ; back to `pull block`: the engine stops here until the
+                              ; host pushes the next word. This is the last instruction of
+                              ; the program and the top of the wrap window, so a PC that ever
+                              ; ran past it would land in `init`, the park, with the line
+                              ; released -- a bus that reads high and nothing driving it.
